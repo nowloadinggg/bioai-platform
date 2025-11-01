@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quick Demo - BioAI Platform</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-color: #1a4f78;
+            --secondary-color: #007bff;
+            --success-color: #28a745;
+        }
+        
+        body { 
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+        
+        .navbar { 
+            background: linear-gradient(135deg, var(--primary-color) 0%, #2d5f8f 100%) !important;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        
+        .upload-area {
+            border: 3px dashed var(--secondary-color);
+            border-radius: 15px;
+            padding: 60px 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+            position: relative;
+        }
+        
+        .upload-area:hover { 
+            background: linear-gradient(135deg, #e9f5ff 0%, #d4ebff 100%);
+            border-color: var(--success-color);
+            transform: scale(1.02);
+        }
+        
+        .upload-area.dragover { 
+            border-color: var(--success-color); 
+            background: linear-gradient(135deg, #e6ffed 0%, #d4f5dd 100%);
+            transform: scale(1.05);
+        }
+        
+        .image-preview {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 10px;
+            margin-top: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        
+        .progress-container {
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .progress {
+            height: 10px;
+            border-radius: 10px;
+        }
+        
+        .progress-bar {
+            background: linear-gradient(90deg, var(--success-color) 0%, #4caf50 100%);
+            animation: progress-animation 2s ease-in-out;
+        }
+        
+        .stat-card {
+            border-radius: 15px;
+            padding: 25px;
+            transition: all 0.3s ease;
+            border: none;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        }
+        
+        .stat-number {
+            font-size: 3rem;
+            font-weight: bold;
+            margin: 0;
+        }
+        
+        .visualization-box {
+            background: white;
+            border: 2px solid #e0e0e0;
+            min-height: 450px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+        
+        .visualization-box img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        
+        .oocyte-card {
+            transition: all 0.3s ease;
+            border-left: 4px solid #dee2e6;
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+        
+        .oocyte-card:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .oocyte-card.grade-a { border-left-color: #28a745; }
+        .oocyte-card.grade-b { border-left-color: #ffc107; }
+        .oocyte-card.grade-c { border-left-color: #dc3545; }
+        
+        .btn-action {
+            border-radius: 10px;
+            padding: 12px 24px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+        }
+        
+        .btn-action:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+        }
+        
+        .metric-gauge {
+            width: 100%;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+        
+        .metric-gauge-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--success-color) 0%, #4caf50 100%);
+            border-radius: 10px;
+            transition: width 1s ease;
+        }
+        
+        .success-checkmark {
+            display: inline-block;
+            animation: scaleIn 0.5s ease;
+        }
+        
+        @keyframes scaleIn {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark shadow-sm sticky-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="index.html">🔬 BioAI Platform</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="index.html">Home</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="demo.html">Demo</a></li>
+                    <li class="nav-item"><a class="nav-link btn btn-outline-light ms-2 px-3" href="login.html">Login</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container my-5">
+        <div class="text-center mb-5">
+            <h1 class="display-4 fw-bold text-primary">Quick Demo - Oocyte Analysis</h1>
+            <p class="lead text-muted">Upload an oocyte image to see AI-powered grading in action</p>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-5 mb-4">
+                <div class="card p-4 shadow-lg h-100">
+                    <h5 class="card-title text-primary"><i class="bi bi-upload"></i> Upload Image</h5>
+                    <div id="drop-area" class="upload-area mb-3">
+                        <i class="bi bi-cloud-arrow-up-fill h1 text-primary"></i>
+                        <p class="mb-0 fw-bold">Drag & Drop or Click to Select File</p>
+                        <p class="small text-muted">Max file size: 10MB (.jpg, .png)</p>
+                        <input type="file" id="oocyteFile" accept="image/*" class="d-none">
+                        <img id="imagePreview" class="image-preview" style="display: none;" alt="Preview">
+                    </div>
+                    
+                    <div class="progress-container" id="progressContainer">
+                        <small class="text-muted mb-2 d-block">Processing...</small>
+                        <div class="progress">
+                            <div class="progress-bar" id="progressBar" role="progressbar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <button id="analyzeButton" class="btn btn-success btn-lg w-100 btn-action" onclick="uploadImage()" disabled>
+                        <span id="buttonText">Select Image to Analyze</span>
+                        <span id="spinner" class="spinner-border text-light spinner-border-sm ms-2 d-none"></span>
+                    </button>
+                    
+                    <div class="d-flex gap-2 mt-3" id="actionButtons" style="display: none !important;">
+                        <button class="btn btn-outline-primary btn-sm flex-fill" onclick="clearAnalysis()">
+                            <i class="bi bi-arrow-counterclockwise"></i> Clear
+                        </button>
+                        <button class="btn btn-outline-success btn-sm flex-fill" onclick="downloadReport()">
+                            <i class="bi bi-download"></i> Download Report
+                        </button>
+                    </div>
+                    
+                    <div id="statusMessage" class="mt-3 small text-center text-muted">
+                        <i class="bi bi-info-circle"></i> Awaiting file upload...
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-7">
+                <div class="card p-4 shadow-lg h-100">
+                    <h5 class="card-title text-success"><i class="bi bi-graph-up"></i> Analysis Results</h5>
+                    <div id="results" class="results-section">
+                        <div class="alert alert-light text-center border">
+                            <i class="bi bi-image h1 text-muted"></i>
+                            <p class="mb-0">Upload an image to view the analysis report.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-white text-center text-lg-start mt-5 border-top">
+        <div class="text-center p-3 text-muted">
+            &copy; 2025 BioAI Solutions. All Rights Reserved.
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const API_URL = 'https://bioai-backend.onrender.com/api/v1/analysis/submit' ;
+        const fileInput = document.getElementById('oocyteFile');
+        const dropArea = document.getElementById('drop-area');
+        const analyzeButton = document.getElementById('analyzeButton');
+        const buttonText = document.getElementById('buttonText');
+        const spinner = document.getElementById('spinner');
+        const resultsDiv = document.getElementById('results');
+        const statusMessage = document.getElementById('statusMessage');
+        const imagePreview = document.getElementById('imagePreview');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressBar = document.getElementById('progressBar');
+        const actionButtons = document.getElementById('actionButtons');
+
+        let currentAnalysisData = null;
+
+        dropArea.addEventListener('click', () => fileInput.click());
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => 
+            dropArea.addEventListener(eventName, preventDefaults, false));
+        
+        function preventDefaults(e) { e.preventDefault(); e.stopPropagation(); }
+        
+        ['dragenter', 'dragover'].forEach(eventName => 
+            dropArea.addEventListener(eventName, () => dropArea.classList.add('dragover'), false));
+        ['dragleave', 'drop'].forEach(eventName => 
+            dropArea.addEventListener(eventName, () => dropArea.classList.remove('dragover'), false));
+
+        dropArea.addEventListener('drop', handleDrop, false);
+        fileInput.addEventListener('change', updateButtonState);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            if (files.length) {
+                fileInput.files = files; 
+                updateButtonState();
+            }
+        }
+        
+        function updateButtonState() {
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                analyzeButton.disabled = false;
+                buttonText.textContent = `Analyze: ${file.name}`;
+                statusMessage.innerHTML = `<i class="bi bi-check-circle-fill text-success"></i> ${file.name} ready. Click Analyze.`;
+                
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    imagePreview.src = e.target.result;
+                    imagePreview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            } else {
+                analyzeButton.disabled = true;
+                buttonText.textContent = 'Select Image to Analyze';
+                statusMessage.innerHTML = '<i class="bi bi-info-circle"></i> Awaiting file upload...';
+                imagePreview.style.display = 'none';
+            }
+        }
+
+        async function uploadImage() {
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            analyzeButton.disabled = true;
+            spinner.classList.remove('d-none');
+            buttonText.textContent = 'Running AI Analysis...';
+            statusMessage.innerHTML = '<i class="bi bi-gear-fill"></i> Processing image with Deep Learning model...';
+            
+            progressContainer.style.display = 'block';
+            animateProgress();
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    currentAnalysisData = data;
+                    displayResults(data);
+                    actionButtons.style.display = 'flex';
+                } else {
+                    displayError(`Server Error (${response.status})`, data);
+                }
+            } catch (error) {
+                displayError('Network/Backend Connection Error', { detail: error.message });
+            } finally {
+                spinner.classList.add('d-none');
+                progressContainer.style.display = 'none';
+                progressBar.style.width = '0%';
+                updateButtonState();
+            }
+        }
+        
+        function animateProgress() {
+            let width = 0;
+            const interval = setInterval(() => {
+                width += 5;
+                progressBar.style.width = width + '%';
+                if (width >= 90) clearInterval(interval);
+            }, 100);
+        }
+
+        function displayResults(data) {
+            const oocytes = data.data;
+            const totalCount = oocytes.length;
+            
+            let gradeA = oocytes.filter(o => o.who_grading.grade.includes('Tốt') || o.who_grading.grade.includes('A')).length;
+            let gradeB = oocytes.filter(o => o.who_grading.grade.includes('Trung bình') || o.who_grading.grade.includes('B')).length;
+            let gradeC = oocytes.filter(o => o.who_grading.grade.includes('Kém') || o.who_grading.grade.includes('C')).length;
+
+            let html = `
+                <div class="row mb-4">
+                    <div class="col-12 mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h6 class="text-success fw-bold mb-0">
+                                <span class="success-checkmark">✓</span> Analysis Complete
+                            </h6>
+                            <span class="badge bg-secondary">ID: ${data.analysis_id}</span>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3 mb-3">
+                        <div class="stat-card card text-center bg-primary text-white">
+                            <h2 class="stat-number">${totalCount}</h2>
+                            <p class="mb-0 small">Total</p>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3 mb-3">
+                        <div class="stat-card card text-center bg-success text-white">
+                            <h2 class="stat-number">${gradeA}</h2>
+                            <p class="mb-0 small">Grade A</p>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3 mb-3">
+                        <div class="stat-card card text-center bg-warning text-dark">
+                            <h2 class="stat-number">${gradeB}</h2>
+                            <p class="mb-0 small">Grade B</p>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3 mb-3">
+                        <div class="stat-card card text-center bg-danger text-white">
+                            <h2 class="stat-number">${gradeC}</h2>
+                            <p class="mb-0 small">Grade C</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mb-4">
+                    <div class="col-lg-6 mb-4">
+                        <h6 class="text-primary fw-bold"><i class="bi bi-image"></i> Visualization</h6>
+                        <div class="visualization-box">
+                            <img src="${imagePreview.src}" alt="Analyzed Image">
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <h6 class="text-primary fw-bold"><i class="bi bi-list-check"></i> Detailed Results</h6>
+                        <div style="max-height: 450px; overflow-y: auto;">
+            `;
+
+            oocytes.forEach((oocyte, index) => {
+                let grade = oocyte.who_grading.grade;
+                let score = oocyte.who_grading.score;
+                let cardClass = 'bg-light';
+                let gradeClass = 'grade-c';
+                let grade_en = 'Unknown';
+                let icon = 'circle';
+                
+                if (grade.includes('Tốt') || grade.includes('A')) {
+                    cardClass = 'bg-success bg-opacity-10';
+                    gradeClass = 'grade-a';
+                    grade_en = 'Grade A';
+                    icon = 'trophy-fill';
+                } else if (grade.includes('Trung bình') || grade.includes('B')) {
+                    cardClass = 'bg-warning bg-opacity-10';
+                    gradeClass = 'grade-b';
+                    grade_en = 'Grade B';
+                    icon = 'star-fill';
+                } else if (grade.includes('Kém') || grade.includes('C')) {
+                    cardClass = 'bg-danger bg-opacity-10';
+                    gradeClass = 'grade-c';
+                    grade_en = 'Grade C';
+                    icon = 'exclamation-triangle-fill';
+                }
+
+                html += `
+                    <div class="card oocyte-card ${gradeClass} ${cardClass} mb-2 p-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="bi bi-${icon} me-2"></i>
+                                <span class="fw-bold">Oocyte #${oocyte.oocyte_id}</span>
+                                <div class="badge bg-primary ms-2">${grade_en}</div>
+                                <div class="metric-gauge mt-2">
+                                    <div class="metric-gauge-fill" style="width: ${score}%;"></div>
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                <div class="fs-4 fw-bold text-primary">${score}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `</div></div></div>`;
+            resultsDiv.innerHTML = html;
+            statusMessage.innerHTML = '<i class="bi bi-check-circle-fill text-success"></i> Analysis complete!';
+        }
+
+        function displayError(title, data) {
+            resultsDiv.innerHTML = `
+                <div class="alert alert-danger">
+                    <h5><i class="bi bi-exclamation-triangle-fill"></i> ${title}</h5>
+                    <p class="mb-2">Please check if the Backend server is running at http://localhost:8000.</p>
+                    <details class="mt-2">
+                        <summary class="cursor-pointer">Error Details</summary>
+                        <pre class="mt-2 p-2 bg-light text-danger small">${JSON.stringify(data, null, 2)}</pre>
+                    </details>
+                </div>`;
+            statusMessage.innerHTML = `<i class="bi bi-x-circle-fill text-danger"></i> Error: ${title}`;
+        }
+
+        function clearAnalysis() {
+            resultsDiv.innerHTML = `
+                <div class="alert alert-light text-center border">
+                    <i class="bi bi-image h1 text-muted"></i>
+                    <p class="mb-0">Upload an image to view the analysis report.</p>
+                </div>
+            `;
+            currentAnalysisData = null;
+            fileInput.value = '';
+            imagePreview.style.display = 'none';
+            actionButtons.style.display = 'none';
+            analyzeButton.disabled = true;
+            buttonText.textContent = 'Select Image to Analyze';
+            statusMessage.innerHTML = '<i class="bi bi-info-circle"></i> Awaiting file upload...';
+        }
+
+        function downloadReport() {
+            if (!currentAnalysisData) {
+                alert('No analysis data available');
+                return;
+            }
+
+            const data = currentAnalysisData;
+            const oocytes = data.data;
+            
+            let reportContent = `BioAI Oocyte Grading Platform - Analysis Report\n`;
+            reportContent += `${'='.repeat(60)}\n\n`;
+            reportContent += `Analysis ID: ${data.analysis_id}\n`;
+            reportContent += `Date: ${new Date().toLocaleString()}\n`;
+            reportContent += `Total Oocytes: ${oocytes.length}\n\n`;
+            
+            let gradeA = oocytes.filter(o => o.who_grading.grade.includes('Tốt') || o.who_grading.grade.includes('A')).length;
+            let gradeB = oocytes.filter(o => o.who_grading.grade.includes('Trung bình') || o.who_grading.grade.includes('B')).length;
+            let gradeC = oocytes.filter(o => o.who_grading.grade.includes('Kém') || o.who_grading.grade.includes('C')).length;
+            
+            reportContent += `Grade Distribution:\n`;
+            reportContent += `  - Grade A: ${gradeA} (${((gradeA/oocytes.length)*100).toFixed(1)}%)\n`;
+            reportContent += `  - Grade B: ${gradeB} (${((gradeB/oocytes.length)*100).toFixed(1)}%)\n`;
+            reportContent += `  - Grade C: ${gradeC} (${((gradeC/oocytes.length)*100).toFixed(1)}%)\n\n`;
+            
+            reportContent += `${'='.repeat(60)}\nDetailed Analysis:\n${'='.repeat(60)}\n\n`;
+            
+            oocytes.forEach((oocyte) => {
+                let grade = oocyte.who_grading.grade;
+                reportContent += `Oocyte #${oocyte.oocyte_id}:\n`;
+                reportContent += `  Grade: ${grade}\n`;
+                reportContent += `  Score: ${oocyte.who_grading.score}\n`;
+                reportContent += `  Area: ${oocyte.pixel_area} px\n\n`;
+            });
+            
+            reportContent += `${'='.repeat(60)}\nEnd of Report\n`;
+            
+            const blob = new Blob([reportContent], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `BioAI_Report_${data.analysis_id}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            
+            statusMessage.innerHTML = '<i class="bi bi-check-circle-fill text-success"></i> Report downloaded!';
+        }
+    </script>
+</body>
+</html>
