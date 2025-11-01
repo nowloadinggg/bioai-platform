@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔬 BioAI Oocyte Grading Platform</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-color: #1a4f78;
+            --secondary-color: #007bff;
+            --success-color: #28a745;
+            --gradient-start: #1a4f78;
+            --gradient-end: #2d5f8f;
+        }
+        
+        * { box-sizing: border-box; }
+        
+        body { 
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+        
+        .navbar { 
+            background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%) !important;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        
+        .hero-section {
+            background: linear-gradient(135deg, #1a4f78 0%, #2d5f8f 50%, #1a4f78 100%);
+            color: white;
+            padding: 120px 0 100px;
+            margin-bottom: 60px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="2" fill="rgba(255,255,255,0.1)"/></svg>');
+            animation: float 20s linear infinite;
+        }
+        
+        @keyframes float {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-100px); }
+        }
+        
+        .hero-content {
+            position: relative;
+            z-index: 1;
+        }
+        
+        .trust-badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-size: 1rem;
+            margin: 8px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+        
+        .trust-badge:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-3px);
+        }
+        
+        .cta-buttons {
+            margin-top: 40px;
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .btn-hero {
+            padding: 18px 40px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            border: none;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        .btn-hero:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        }
+        
+        .btn-login {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-demo {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+        
+        .tech-card {
+            min-height: 220px;
+            border: none;
+            border-left: 4px solid var(--secondary-color);
+            transition: all 0.3s ease;
+            background: white;
+            border-radius: 10px;
+        }
+        
+        .tech-card:hover { 
+            transform: translateY(-8px); 
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15) !important;
+            border-left-color: var(--success-color);
+        }
+        
+        .feature-section {
+            padding: 80px 0;
+        }
+        
+        .feature-card {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            height: 100%;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+        }
+        
+        .feature-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .stats-section {
+            background: white;
+            padding: 60px 0;
+            margin: 60px 0;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 30px;
+        }
+        
+        .stat-number {
+            font-size: 3.5rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .stat-label {
+            font-size: 1.2rem;
+            color: #6c757d;
+            margin-top: 10px;
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.05); }
+        }
+        
+        @media (max-width: 768px) {
+            .hero-section { padding: 80px 0 60px; }
+            .btn-hero { padding: 14px 30px; font-size: 1rem; }
+            .cta-buttons { flex-direction: column; }
+            .stat-number { font-size: 2.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="index.html">🔬 BioAI Platform</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="#features">Features</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#technology">Technology</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#stats">Statistics</a></li>
+                    <li class="nav-item"><a class="nav-link btn btn-outline-light ms-2 px-3" href="login.html">Login</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <header class="hero-section">
+        <div class="container hero-content">
+            <div class="row align-items-center">
+                <div class="col-lg-7">
+                    <h1 class="display-2 fw-bold mb-4">Automated, Data-Driven Fertility Assessment</h1>
+                    <p class="lead mb-4" style="font-size: 1.3rem;">Harness the power of Deep Learning to accurately quantify and grade oocyte quality, streamlining clinical decision-making and IVF success rates.</p>
+                    
+                    <div class="mb-4">
+                        <span class="trust-badge"><i class="bi bi-check-circle-fill"></i> 99.2% Accuracy</span>
+                        <span class="trust-badge"><i class="bi bi-hospital"></i> 50+ Clinics</span>
+                        <span class="trust-badge"><i class="bi bi-lightning-fill"></i> Real-time Analysis</span>
+                    </div>
+                    
+                    <div class="cta-buttons">
+                        <a href="login.html" class="btn btn-hero btn-login">
+                            <i class="bi bi-box-arrow-in-right"></i> Login to Dashboard
+                        </a>
+                        <a href="demo.html" class="btn btn-hero btn-demo">
+                            <i class="bi bi-play-circle-fill"></i> Try Quick Demo
+                        </a>
+                    </div>
+                </div>
+                <div class="col-lg-5 text-center mt-5 mt-lg-0">
+                    <i class="bi bi-dna display-1 pulse" style="font-size: 10rem;"></i>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="stats-section">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-3 col-6">
+                    <div class="stat-item">
+                        <div class="stat-number">50K+</div>
+                        <div class="stat-label">Images Analyzed</div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="stat-item">
+                        <div class="stat-number">99.2%</div>
+                        <div class="stat-label">Accuracy Rate</div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="stat-item">
+                        <div class="stat-number">50+</div>
+                        <div class="stat-label">Partner Clinics</div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="stat-item">
+                        <div class="stat-number">&lt;2s</div>
+                        <div class="stat-label">Processing Time</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container feature-section" id="features">
+        <h2 class="text-center mb-5 fw-bold text-primary display-5">Why Choose BioAI?</h2>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="feature-card text-center">
+                    <i class="bi bi-lightning-charge-fill feature-icon"></i>
+                    <h4 class="fw-bold mb-3">Lightning Fast</h4>
+                    <p class="text-muted">Analyze images in under 2 seconds with our optimized deep learning pipeline. No more waiting for results.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card text-center">
+                    <i class="bi bi-shield-check feature-icon"></i>
+                    <h4 class="fw-bold mb-3">Clinically Validated</h4>
+                    <p class="text-muted">Our algorithms are calibrated against WHO criteria and validated by leading fertility specialists worldwide.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card text-center">
+                    <i class="bi bi-graph-up-arrow feature-icon"></i>
+                    <h4 class="fw-bold mb-3">Improve Success Rates</h4>
+                    <p class="text-muted">Data-driven insights help clinicians make better decisions, improving IVF success rates by up to 15%.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container my-5" id="technology">
+        <h2 class="text-center mb-5 fw-bold text-primary display-5">How Our AI Works</h2>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card tech-card p-4 shadow">
+                    <i class="bi bi-cpu h2 text-secondary"></i>
+                    <h5 class="card-title mt-3 fw-bold">High-Precision Detection</h5>
+                    <p class="card-text">We use State-of-the-Art Segmentation models (like U-Net/Mask R-CNN) to define the exact pixel boundaries of each cell structure.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card tech-card p-4 shadow">
+                    <i class="bi bi-bar-chart-line h2 text-secondary"></i>
+                    <h5 class="card-title mt-3 fw-bold">Quantitative Biometrics</h5>
+                    <p class="card-text">Metrics like zonal thickness, cytoplasm granularity, and nuclear structure size are automatically calculated in milliseconds.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card tech-card p-4 shadow">
+                    <i class="bi bi-shield-lock h2 text-secondary"></i>
+                    <h5 class="card-title mt-3 fw-bold">Reliable Clinical Scoring</h5>
+                    <p class="card-text">Our proprietary algorithm aggregates biometrics into a consolidated score, calibrated against established WHO criteria for reliability.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container my-5 py-5 text-center">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <h2 class="display-4 fw-bold mb-4">Ready to Get Started?</h2>
+                <p class="lead mb-5">Join leading fertility clinics using AI-powered analysis to improve patient outcomes.</p>
+                <div class="d-flex gap-3 justify-content-center flex-wrap">
+                    <a href="login.html" class="btn btn-hero btn-login">
+                        <i class="bi bi-person-circle"></i> Login to Your Account
+                    </a>
+                    <a href="demo.html" class="btn btn-hero btn-demo">
+                        <i class="bi bi-rocket-takeoff-fill"></i> Try Free Demo
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-white text-center text-lg-start mt-5 border-top">
+        <div class="container p-4">
+            <div class="row">
+                <div class="col-lg-6 col-md-12 mb-4 mb-md-0">
+                    <h5 class="text-uppercase fw-bold">BioAI Solutions</h5>
+                    <p class="text-muted">Advanced AI-powered fertility assessment for better clinical outcomes.</p>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-4 mb-md-0">
+                    <h5 class="text-uppercase fw-bold">Quick Links</h5>
+                    <ul class="list-unstyled mb-0">
+                        <li><a href="#features" class="text-muted text-decoration-none">Features</a></li>
+                        <li><a href="#technology" class="text-muted text-decoration-none">Technology</a></li>
+                        <li><a href="login.html" class="text-muted text-decoration-none">Login</a></li>
+                        <li><a href="demo.html" class="text-muted text-decoration-none">Demo</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-4 mb-md-0">
+                    <h5 class="text-uppercase fw-bold">Contact</h5>
+                    <ul class="list-unstyled mb-0">
+                        <li class="text-muted"><i class="bi bi-envelope"></i> contact@bioai.com</li>
+                        <li class="text-muted"><i class="bi bi-telephone"></i> +84 123 456 789</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="text-center p-3 text-muted bg-light">
+            &copy; 2025 BioAI Solutions. All Rights Reserved.
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
