@@ -1,1 +1,17 @@
-augvi
+# FastAPI
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+python-multipart==0.0.9
+
+# YOLO
+ultralytics==8.3.0
+torch==2.1.0
+torchvision==0.16.0
+
+# Image Processing
+opencv-python==4.10.0
+pillow==10.4.0
+numpy==1.26.4
+
+# Utilities
+python-dotenv==1.0.1
