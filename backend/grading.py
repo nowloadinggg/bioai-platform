@@ -1,99 +1,101 @@
 from typing import Dict, List
 
 class OocyteGrader:
-    """
-    WHO-based oocyte grading system
-    """
+    """WHO-based grading system"""
     
     def __init__(self):
-        # Grading thresholds (simplified)
         self.thresholds = {
-            'circularity_min': 0.7,      # Good circularity
-            'zp_thickness_min': 10.0,     # Minimum ZP thickness
-            'zp_thickness_max': 25.0,     # Maximum ZP thickness
-            'area_min': 5000,             # Minimum pixel area
+            'circularity_excellent': 0.85,
+            'circularity_good': 0.75,
+            'circularity_fair': 0.65,
+            'zp_min': 10.0,
+            'zp_max': 25.0,
+            'area_min': 5000,
         }
     
-    def grade_oocyte(self, segment: Dict) -> Dict:
+    def grade_oocyte(self, oocyte: Dict) -> Dict:
         """
-        Grade a single oocyte based on morphological features
+        Grade 1 oocyte dựa trên morphological features
         
         Returns:
-            Dict with grade (A/B/C) and score (0-100)
+            Dict với grade (A/B/C) và score (0-100)
         """
         score = 0
-        max_score = 100
+        print(f"\n🔍 Grading oocyte {oocyte.get('oocyte_id')}:")
+        print(f"  - Input features: {oocyte}")
         
         # 1. Circularity (40 points)
-        circularity = segment.get('circularity', 0)
-        if circularity >= 0.9:
+        circularity = oocyte.get('circularity', 0)
+        if circularity >= self.thresholds['circularity_excellent']:
             score += 40
-        elif circularity >= 0.8:
+        elif circularity >= self.thresholds['circularity_good']:
             score += 30
-        elif circularity >= 0.7:
+        elif circularity >= self.thresholds['circularity_fair']:
             score += 20
         else:
             score += 10
         
-        # 2. Zona Pellucida Thickness (30 points)
-        zp_thickness = segment.get('zp_thickness', 0)
-        if self.thresholds['zp_thickness_min'] <= zp_thickness <= self.thresholds['zp_thickness_max']:
+        # 2. ZP Thickness (30 points)
+        zp = oocyte.get('zp_thickness', 0)
+        if self.thresholds['zp_min'] <= zp <= self.thresholds['zp_max']:
             score += 30
-        elif zp_thickness < self.thresholds['zp_thickness_min']:
+        elif zp < self.thresholds['zp_min']:
             score += 15
         else:
             score += 10
         
-        # 3. Size/Area (20 points)
-        area = segment.get('pixel_area', 0)
+        # 3. Size (20 points)
+        area = oocyte.get('pixel_area', 0)
         if area >= self.thresholds['area_min']:
             score += 20
         else:
             score += int((area / self.thresholds['area_min']) * 20)
         
         # 4. Confidence (10 points)
-        confidence = segment.get('confidence', 0)
-        score += int(confidence * 10)
+        conf = oocyte.get('confidence', 0)
+        score += int(conf * 10)
         
-        # Normalize to 100
-        score = min(score, max_score)
+        # Print score components
+        print(f"  - Score breakdown:")
+        print(f"    * Circularity (max 40): {circularity} -> {score - (int(conf * 10) + int((area / self.thresholds['area_min']) * 20) + (30 if self.thresholds['zp_min'] <= zp <= self.thresholds['zp_max'] else 15 if zp < self.thresholds['zp_min'] else 10))}")
+        print(f"    * ZP Thickness (max 30): {zp} -> {30 if self.thresholds['zp_min'] <= zp <= self.thresholds['zp_max'] else 15 if zp < self.thresholds['zp_min'] else 10}")
+        print(f"    * Size (max 20): {area}/{self.thresholds['area_min']} -> {20 if area >= self.thresholds['area_min'] else int((area / self.thresholds['area_min']) * 20)}")
+        print(f"    * Confidence (max 10): {conf} -> {int(conf * 10)}")
+        
+        # Normalize
+        score = min(score, 100)
+        print(f"  - Final score: {score}")
         
         # Determine grade
         if score >= 80:
             grade = "Tốt (Good/A)"
-            grade_en = "A"
         elif score >= 60:
             grade = "Trung bình (Fair/B)"
-            grade_en = "B"
         else:
             grade = "Kém (Poor/C)"
-            grade_en = "C"
+        print(f"  - Final grade: {grade}")
         
         return {
             'grade': grade,
-            'grade_en': grade_en,
-            'score': score,
-            'details': {
-                'circularity': circularity,
-                'zp_thickness': zp_thickness,
-                'area': area,
-                'confidence': confidence
-            }
+            'score': score
         }
     
-    def grade_batch(self, segments: List[Dict]) -> List[Dict]:
+    def grade_batch(self, oocytes: List[Dict]) -> List[Dict]:
         """Grade multiple oocytes"""
         graded = []
         
-        for segment in segments:
-            grading = self.grade_oocyte(segment)
+        for oocyte in oocytes:
+            grading = self.grade_oocyte(oocyte)
             
             graded.append({
-                'oocyte_id': segment['oocyte_id'],
-                'bbox': segment['bbox'],
-                'pixel_area': segment['pixel_area'],
-                'confidence': segment['confidence'],
+                'oocyte_id': oocyte['oocyte_id'],
+                'bbox': oocyte['bbox'],
+                'pixel_area': oocyte['pixel_area'],
+                'confidence': oocyte['confidence'],
                 'who_grading': grading
             })
         
         return graded
+
+# Global instance
+grader = OocyteGrader()
