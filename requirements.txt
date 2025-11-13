@@ -1,12 +1,10 @@
-# FastAPI
-fastapi==0.115.0
-uvicorn[standard]==0.30.6
-python-multipart==0.0.9
+# Flask Web Framework
+Flask==3.0.0
+flask-cors==4.0.0
+Werkzeug==3.0.1
 
-# YOLO
-ultralytics==8.3.0
-torch==2.1.0
-torchvision==0.16.0
+# Roboflow
+inference-sdk==0.9.0
 
 # Image Processing
 opencv-python==4.10.0.84

@@ -10,17 +10,17 @@
     
     <style>
         :root {
-            --primary-color: #1a4f78;
-            --secondary-color: #007bff;
-            --success-color: #28a745;
-            --gradient-start: #1a4f78;
-            --gradient-end: #2d5f8f;
+            --primary-color: #14967f;
+            --secondary-color: #095d7e;
+            --success-color: #ccecee;
+            --gradient-start: #e2fcd6;
+            --gradient-end: #095d7e;
         }
         
         * { box-sizing: border-box; }
         
         body { 
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            background: linear-gradient(135deg, #f1f9ff 0%, #e2fcd6 25%, #ccecee 50%, #14967f 100%);
             min-height: 100vh;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
         }
@@ -28,12 +28,12 @@
         .navbar { 
             background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%) !important;
             backdrop-filter: blur(10px);
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 20px rgba(20, 150, 127, 0.3);
         }
         
         .hero-section {
-            background: linear-gradient(135deg, #1a4f78 0%, #2d5f8f 50%, #1a4f78 100%);
-            color: white;
+            background: linear-gradient(135deg, #e2fcd6 0%, #ccecee 35%, #14967f 70%, #095d7e 100%);
+            color: #000000;
             padding: 120px 0 100px;
             margin-bottom: 60px;
             position: relative;
@@ -63,18 +63,21 @@
         
         .trust-badge {
             display: inline-block;
-            background: rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.8);
             padding: 10px 20px;
             border-radius: 25px;
             font-size: 1rem;
             margin: 8px;
             backdrop-filter: blur(10px);
             transition: all 0.3s ease;
+            border: 1px solid rgba(0,0,0,0.2);
+            color: #000000;
         }
         
         .trust-badge:hover {
-            background: rgba(255,255,255,0.3);
+            background: rgba(255,255,255,0.95);
             transform: translateY(-3px);
+            box-shadow: 0 4px 15px rgba(20, 150, 127, 0.3);
         }
         
         .cta-buttons {
@@ -93,37 +96,45 @@
             border: none;
             text-transform: uppercase;
             letter-spacing: 1px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
         }
         
         .btn-hero:hover {
             transform: translateY(-5px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
         }
         
         .btn-login {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #e2fcd6 0%, #14967f 100%);
             color: white;
         }
         
+        .btn-login:hover {
+            background: linear-gradient(135deg, #14967f 0%, #e2fcd6 100%);
+        }
+        
         .btn-demo {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            background: linear-gradient(135deg, #ccecee 0%, #095d7e 100%);
             color: white;
+        }
+        
+        .btn-demo:hover {
+            background: linear-gradient(135deg, #095d7e 0%, #ccecee 100%);
         }
         
         .tech-card {
             min-height: 220px;
             border: none;
-            border-left: 4px solid var(--secondary-color);
+            border-left: 4px solid #14967f;
             transition: all 0.3s ease;
-            background: white;
+            background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(226, 252, 214, 0.1) 100%);
             border-radius: 10px;
         }
         
         .tech-card:hover { 
             transform: translateY(-8px); 
-            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15) !important;
-            border-left-color: var(--success-color);
+            box-shadow: 0 12px 24px rgba(20, 150, 127, 0.3) !important;
+            border-left-color: #095d7e;
         }
         
         .feature-section {
@@ -131,17 +142,17 @@
         }
         
         .feature-card {
-            background: white;
+            background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(204, 236, 238, 0.1) 100%);
             padding: 40px;
             border-radius: 15px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 15px rgba(20, 150, 127, 0.2);
             transition: all 0.3s ease;
             height: 100%;
         }
         
         .feature-card:hover {
             transform: translateY(-10px);
-            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+            box-shadow: 0 8px 30px rgba(20, 150, 127, 0.3);
         }
         
         .feature-icon {
@@ -154,9 +165,10 @@
         }
         
         .stats-section {
-            background: white;
+            background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(204, 236, 238, 0.1) 100%);
             padding: 60px 0;
             margin: 60px 0;
+            box-shadow: 0 4px 20px rgba(20, 150, 127, 0.2);
         }
         
         .stat-item {
@@ -237,7 +249,7 @@
                     </div>
                 </div>
                 <div class="col-lg-5 text-center mt-5 mt-lg-0">
-                    <i class="bi bi-dna display-1 pulse" style="font-size: 10rem;"></i>
+                    <i class="bi bi-dna display-1 pulse" style="font-size: 10rem; color: #000000;"></i>
                 </div>
             </div>
         </div>
@@ -345,7 +357,7 @@
         </div>
     </div>
 
-    <footer class="bg-white text-center text-lg-start mt-5 border-top">
+    <footer class="bg-white text-center text-lg-start mt-5 border-top" style="background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(96, 165, 250, 0.1) 100%) !important;">
         <div class="container p-4">
             <div class="row">
                 <div class="col-lg-6 col-md-12 mb-4 mb-md-0">

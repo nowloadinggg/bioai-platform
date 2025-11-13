@@ -13,6 +13,7 @@ ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg"}
 
 WORKSPACE = "meo-d8oog"       # Your Roboflow workspace
 WORKFLOW_ID = "detect-count-and-visualize"  # Your Roboflow workflow ID
+MODEL_ID = "meo-d8oog/1"  # Your Roboflow model ID (workspace/version)
 API_KEY = "rf_sowvghtKgpcpTYwdyZnwol2E9Rg2"  # Your Roboflow API key
 
 # ----------------------------
@@ -39,7 +40,7 @@ def allowed_file(filename):
 
 
 def draw_bounding_boxes(filepath, predictions):
-    """Draw bounding boxes on the image using predictions (if Roboflow doesn't return visualization)."""
+    """Draw bounding boxes on the image using predictions."""
     image = cv2.imread(filepath)
     if image is None:
         return None
@@ -48,10 +49,31 @@ def draw_bounding_boxes(filepath, predictions):
         x, y, w, h = int(pred["x"]), int(pred["y"]), int(pred["width"]), int(pred["height"])
         class_name = pred["class"]
         conf = pred["confidence"]
+        
+        # Color: Green for good, Red for bad
         color = (0, 255, 0) if class_name == "good" else (0, 0, 255)
-        cv2.rectangle(image, (x - w // 2, y - h // 2), (x + w // 2, y + h // 2), color, 2)
-        cv2.putText(image, f"{class_name} ({conf:.2f})", (x - w // 2, y - h // 2 - 5),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+        
+        # Calculate box corners
+        x1, y1 = x - w // 2, y - h // 2
+        x2, y2 = x + w // 2, y + h // 2
+        
+        # Draw rectangle with thicker lines
+        cv2.rectangle(image, (x1, y1), (x2, y2), color, 3)
+        
+        # Create label with background
+        label = f"{class_name} {conf:.2f}"
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        font_scale = 0.7
+        thickness = 2
+        
+        # Get text size for background
+        (text_width, text_height), baseline = cv2.getTextSize(label, font, font_scale, thickness)
+        
+        # Draw filled rectangle as background for text
+        cv2.rectangle(image, (x1, y1 - text_height - 10), (x1 + text_width, y1), color, -1)
+        
+        # Put text on top of background
+        cv2.putText(image, label, (x1, y1 - 5), font, font_scale, (255, 255, 255), thickness)
 
     annotated_filename = f"annotated_{os.path.basename(filepath)}"
     annotated_path = os.path.join(UPLOAD_FOLDER, annotated_filename)
@@ -77,34 +99,31 @@ def analyze_images():
             file.save(filepath)
 
             try:
-                # Send image to Roboflow
-                result = client.run_workflow(
-                    workspace_name=WORKSPACE,
-                    workflow_id=WORKFLOW_ID,
-                    images={"image": filepath},
-                    use_cache=True
-                )
+                # Send image to Roboflow using infer method
+                result = client.infer(filepath, model_id=MODEL_ID)
 
-                # Extract visualized image if available
+                # Extract predictions
                 image_url = None
-                predictions = []
-                if isinstance(result, dict):
-                    rf_results = result.get("results", [])
-                    if rf_results:
-                        predictions = rf_results[0].get("predictions", [])
-                        if "visualization" in rf_results[0]:
-                            image_url = rf_results[0]["visualization"]
+                predictions = result.get("predictions", []) if isinstance(result, dict) else []
 
-                # If Roboflow didn't return visualization, generate it manually
-                if not image_url and predictions:
+                # Generate visualization manually
+                if predictions:
                     annotated_filename = draw_bounding_boxes(filepath, predictions)
                     if annotated_filename:
                         image_url = f"http://127.0.0.1:8080/uploads/{annotated_filename}"
 
+                # Format result to match frontend expectations
+                formatted_result = {
+                    "results": [{
+                        "predictions": predictions,
+                        "visualization": image_url
+                    }]
+                }
+
                 results.append({
                     "filename": filename,
                     "image_url": image_url,
-                    "result": result
+                    "result": formatted_result
                 })
 
             except Exception as e:

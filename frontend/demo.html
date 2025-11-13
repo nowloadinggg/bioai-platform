@@ -1,293 +1,843 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BioAI - Batch Image Analyzer</title>
-
-  <!-- Bootstrap -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
-  
-  <style>
-    body {
-      background-color: #f8fafc;
-      font-family: "Inter", sans-serif;
-    }
-    .upload-area {
-      border: 2px dashed #94a3b8;
-      border-radius: 16px;
-      background-color: #fff;
-      padding: 40px;
-      text-align: center;
-      transition: all 0.3s ease;
-      cursor: pointer;
-    }
-    .upload-area.dragover {
-      border-color: #3b82f6;
-      background-color: #eff6ff;
-    }
-    .upload-area input[type="file"] {
-      display: none;
-    }
-    .results-area {
-      margin-top: 2rem;
-    }
-    .batch-progress-item {
-      display: flex;
-      align-items: center;
-      padding: 10px 15px;
-      background: #fff;
-      border-radius: 12px;
-      margin-bottom: 10px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    }
-    .batch-progress-item.processing i {
-      color: #0d6efd;
-    }
-    .batch-progress-item.success i {
-      color: #198754;
-    }
-    .batch-progress-item.error i {
-      color: #dc3545;
-    }
-    .loading-spinner {
-      width: 20px;
-      height: 20px;
-      border: 3px solid #cbd5e1;
-      border-top: 3px solid #0d6efd;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      display: inline-block;
-    }
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔬 BioAI - Image Analysis Dashboard</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-color: #14967f;
+            --secondary-color: #095d7e;
+            --success-color: #ccecee;
+            --gradient-start: #e2fcd6;
+            --gradient-end: #095d7e;
+        }
+        
+        * { 
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f1f9ff 0%, #e2fcd6 25%, #ccecee 50%, #14967f 100%);
+            min-height: 100vh;
+        }
+        
+        .navbar { 
+            background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%) !important;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 20px rgba(20, 150, 127, 0.3);
+        }
+        
+        .navbar-brand {
+            font-size: 1.5rem !important;
+            font-weight: 800 !important;
+            letter-spacing: 1px;
+        }
+        
+        .navbar-nav .nav-link {
+            font-weight: 600;
+            font-size: 1.05rem;
+            transition: all 0.3s ease;
+        }
+        
+        .navbar-nav .nav-link:hover {
+            transform: translateY(-2px);
+        }
+        
+        .navbar-nav .nav-link.active {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 8px 15px !important;
+        }
+        
+        .page-header {
+            background: linear-gradient(135deg, #095d7e 0%, #14967f 70%, #ccecee 100%);
+            color: white;
+            padding: 80px 0 60px;
+            margin-bottom: 40px;
+            box-shadow: 0 8px 30px rgba(9, 93, 126, 0.5);
+            border-bottom: 4px solid #e2fcd6;
+        }
+        
+        .page-header h1 {
+            font-size: 3.5rem;
+            font-weight: 900;
+            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.4);
+            margin-bottom: 20px;
+            letter-spacing: 2px;
+        }
+        
+        .page-header p {
+            font-size: 1.3rem;
+            font-weight: 500;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            opacity: 0.95;
+        }
+        
+        .upload-area {
+            border: 3px dashed #14967f;
+            border-radius: 20px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(226, 252, 214, 0.15) 100%);
+            padding: 60px 40px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(20, 150, 127, 0.25);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+        
+        .upload-area:hover {
+            border-color: #ccecee;
+            background: linear-gradient(135deg, rgba(255,255,255,1) 0%, rgba(204, 236, 238, 0.2) 100%);
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(20, 150, 127, 0.35);
+        }
+        
+        .upload-area.dragover {
+            border-color: #e2fcd6;
+            background: linear-gradient(135deg, rgba(226, 252, 214, 0.2) 0%, rgba(204, 236, 238, 0.25) 100%);
+        }
+        
+        .upload-area input[type="file"] {
+            display: none;
+        }
+        
+        .upload-icon {
+            font-size: 4rem;
+            color: #14967f;
+            margin-bottom: 20px;
+        }
+        
+        .btn-analyze {
+            background: linear-gradient(135deg, #14967f 0%, #095d7e 100%);
+            color: white;
+            padding: 15px 50px;
+            font-size: 1.3rem;
+            font-weight: 700;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            border-radius: 12px;
+            border: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(20, 150, 127, 0.4);
+        }
+        
+        .btn-analyze:hover {
+            background: linear-gradient(135deg, #095d7e 0%, #14967f 100%);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(20, 150, 127, 0.5);
+            color: white;
+        }
+        
+        .btn-analyze:disabled {
+            background: #cbd5e1;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        
+        .batch-progress-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 18px;
+            background: white;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 8px rgba(20, 150, 127, 0.15);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+        
+        .batch-progress-item.processing i {
+            color: #14967f;
+        }
+        
+        .batch-progress-item.success i {
+            color: #198754;
+        }
+        
+        .batch-progress-item.error i {
+            color: #dc3545;
+        }
+        
+        .loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid #cbd5e1;
+            border-top: 3px solid #14967f;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            display: inline-block;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .card {
+            border: none;
+            border-radius: 15px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(226, 252, 214, 0.08) 100%);
+            box-shadow: 0 4px 15px rgba(20, 150, 127, 0.25);
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(20, 150, 127, 0.35);
+        }
+        
+        .card-header {
+            background: linear-gradient(135deg, #14967f 0%, #095d7e 100%);
+            color: white;
+            border-radius: 15px 15px 0 0 !important;
+            font-weight: 700;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+        
+        .table {
+            border-radius: 10px;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+        
+        .table-light {
+            background: linear-gradient(135deg, rgba(226, 252, 214, 0.2) 0%, rgba(204, 236, 238, 0.15) 100%);
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .btn-outline-secondary:hover {
+            background: linear-gradient(135deg, #ccecee 0%, #14967f 100%);
+            border-color: #14967f;
+            color: white;
+        }
+        
+        .btn-outline-primary {
+            border-color: #14967f;
+            color: #095d7e;
+        }
+        
+        .btn-outline-primary:hover {
+            background: linear-gradient(135deg, #ccecee 0%, #14967f 100%);
+            border-color: #14967f;
+            color: white;
+        }
+        
+        .btn-pdf {
+            background: linear-gradient(135deg, #e2fcd6 0%, #ccecee 50%, #14967f 100%);
+            border: none;
+            color: white;
+        }
+        
+        .btn-pdf:hover {
+            background: linear-gradient(135deg, #14967f 0%, #ccecee 50%, #e2fcd6 100%);
+            color: white;
+        }
+        
+        /* Ensure all inputs, buttons, and form elements use the same font */
+        input, button, select, textarea, label, .form-control, .btn {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif !important;
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif !important;
+        }
+        
+        p, span, div, a {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+        
+        @media (max-width: 768px) {
+            .upload-area {
+                padding: 40px 20px;
+            }
+            .btn-analyze {
+                padding: 12px 30px;
+                font-size: 1rem;
+            }
+            .page-header {
+                padding: 50px 0 40px;
+            }
+            .page-header h1 {
+                font-size: 2.5rem;
+            }
+        }
+    </style>
 </head>
 
 <body>
-  <div class="container py-5">
-    <h1 class="text-center mb-4 fw-bold">🧠 BioAI - Batch Image Analyzer</h1>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="index.html">🔬 BioAI Platform</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="index.html">Home</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="demo.html">Demo</a></li>
+                    <li class="nav-item"><a class="nav-link btn btn-outline-light ms-2 px-3" href="login.html">Login</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
 
-    <!-- Upload Section -->
-    <div class="upload-area" id="upload-area">
-      <i class="bi bi-cloud-arrow-up display-4 text-primary"></i>
-      <h5 class="mt-3">Drag & Drop your images here</h5>
-      <p class="text-muted mb-2">or click to select multiple files</p>
-      <input type="file" id="file-input" accept=".jpg,.jpeg,.png" multiple>
-      <button class="btn btn-primary mt-3" id="select-files-btn">Select Files</button>
-      <p class="text-muted small mt-2" id="file-count"></p>
+    <div class="page-header">
+        <div class="container text-center">
+            <h1 class="display-4 fw-bold mb-3">🔬 Image Analysis Dashboard</h1>
+            <p class="lead mb-0">Upload and analyze your oocyte images using our advanced AI technology</p>
+        </div>
     </div>
 
-    <!-- Analyze Button -->
-    <div class="text-center mt-4">
-      <button class="btn btn-success btn-lg" id="analyze-btn" disabled>
-        <span id="btn-text">Analyze Images</span>
-      </button>
+    <div class="container py-4">
+
+        <!-- Patient Information Section -->
+        <div class="row justify-content-center mb-4">
+            <div class="col-lg-10">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-person-fill me-2"></i>Patient Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="patient-name" class="form-label fw-bold">Patient Name</label>
+                                <input type="text" class="form-control" id="patient-name" placeholder="Enter patient name">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="patient-dob" class="form-label fw-bold">Date of Birth</label>
+                                <input type="date" class="form-control" id="patient-dob">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upload Section -->
+        <div class="row justify-content-center mb-4">
+            <div class="col-lg-10">
+                <div class="upload-area" id="upload-area">
+                    <i class="bi bi-cloud-arrow-up upload-icon"></i>
+                    <h4 class="mb-3 fw-bold">Drag & Drop Your Images Here</h4>
+                    <p class="text-muted mb-3">or click to select multiple files (PNG, JPG, JPEG)</p>
+                    <input type="file" id="file-input" accept=".jpg,.jpeg,.png" multiple>
+                    <button class="btn btn-primary btn-lg px-5" id="select-files-btn">
+                        <i class="bi bi-folder2-open"></i> Select Files
+                    </button>
+                    <p class="text-primary fw-bold mt-3" id="file-count"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analyze Button -->
+        <div class="text-center mb-5">
+            <button class="btn btn-analyze" id="analyze-btn" disabled>
+                <i class="bi bi-play-circle-fill me-2"></i>
+                <span id="btn-text">Analyze Images</span>
+            </button>
+        </div>
+
+        <!-- Progress Section -->
+        <div id="batch-progress" class="mb-4"></div>
+
+        <!-- Status -->
+        <div id="status" class="text-center mb-4"></div>
+
+        <!-- Action Buttons -->
+        <div id="action-btns" class="action-buttons mb-5" style="display: none;">
+            <button class="btn btn-outline-secondary btn-lg px-4" id="reset-btn">
+                <i class="bi bi-arrow-clockwise"></i> Reset
+            </button>
+            <button class="btn btn-outline-primary btn-lg px-4" id="download-btn">
+                <i class="bi bi-download"></i> Download JSON
+            </button>
+            <button class="btn btn-pdf btn-lg px-4" id="download-pdf-btn">
+                <i class="bi bi-file-earmark-pdf"></i> Download PDF Report
+            </button>
+        </div>
+
+        <!-- Results Section -->
+        <div id="results" class="results-area"></div>
     </div>
 
-    <!-- Progress Section -->
-    <div id="batch-progress" class="mt-4"></div>
+    <footer class="bg-white text-center text-lg-start mt-5 border-top" style="background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(96, 165, 250, 0.1) 100%) !important;">
+        <div class="container p-4">
+            <div class="row">
+                <div class="col-lg-6 col-md-12 mb-4 mb-md-0">
+                    <h5 class="text-uppercase fw-bold">BioAI Solutions</h5>
+                    <p class="text-muted">Advanced AI-powered fertility assessment for better clinical outcomes.</p>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-4 mb-md-0">
+                    <h5 class="text-uppercase fw-bold">Quick Links</h5>
+                    <ul class="list-unstyled mb-0">
+                        <li><a href="index.html" class="text-muted text-decoration-none">Home</a></li>
+                        <li><a href="demo.html" class="text-muted text-decoration-none">Demo</a></li>
+                        <li><a href="login.html" class="text-muted text-decoration-none">Login</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-4 mb-md-0">
+                    <h5 class="text-uppercase fw-bold">Contact</h5>
+                    <ul class="list-unstyled mb-0">
+                        <li class="text-muted"><i class="bi bi-envelope"></i> contact@bioai.com</li>
+                        <li class="text-muted"><i class="bi bi-telephone"></i> +84 123 456 789</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="text-center p-3 text-muted bg-light">
+            &copy; 2025 BioAI Solutions. All Rights Reserved.
+        </div>
+    </footer>
 
-    <!-- Results Section -->
-    <div id="results" class="results-area mt-4"></div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
-    <!-- Action Buttons -->
-    <div id="action-btns" class="text-center mt-4" style="display: none;">
-      <button class="btn btn-outline-secondary me-2" id="reset-btn">Reset</button>
-      <button class="btn btn-outline-primary" id="download-btn">Download JSON</button>
-    </div>
+    <script>
+        const fileInput = document.getElementById("file-input");
+        const uploadArea = document.getElementById("upload-area");
+        const selectFilesBtn = document.getElementById("select-files-btn");
+        const analyzeBtn = document.getElementById("analyze-btn");
+        const batchProgress = document.getElementById("batch-progress");
+        const status = document.getElementById("status");
+        const results = document.getElementById("results");
+        const fileCount = document.getElementById("file-count");
+        const resetBtn = document.getElementById("reset-btn");
+        const downloadBtn = document.getElementById("download-btn");
+        const btnText = document.getElementById("btn-text");
+        const actionBtns = document.getElementById("action-btns");
 
-    <!-- Status -->
-    <div class="text-center mt-4" id="status"></div>
-  </div>
+        let selectedFiles = [];
+        let allResults = [];
 
-  <!-- JS Logic -->
-  <script>
-    const uploadArea = document.getElementById("upload-area");
-    const fileInput = document.getElementById("file-input");
-    const selectFilesBtn = document.getElementById("select-files-btn");
-    const fileCount = document.getElementById("file-count");
-    const analyzeBtn = document.getElementById("analyze-btn");
-    const btnText = document.getElementById("btn-text");
-    const batchProgress = document.getElementById("batch-progress");
-    const results = document.getElementById("results");
-    const actionBtns = document.getElementById("action-btns");
-    const status = document.getElementById("status");
-    const resetBtn = document.getElementById("reset-btn");
-    const downloadBtn = document.getElementById("download-btn");
-
-    let selectedFiles = [];
-    let allResults = [];
-
-    // 🖱️ File selection
-    selectFilesBtn.onclick = () => fileInput.click();
-    fileInput.onchange = handleFiles;
-    uploadArea.addEventListener("dragover", e => {
-      e.preventDefault();
-      uploadArea.classList.add("dragover");
-    });
-    uploadArea.addEventListener("dragleave", () => uploadArea.classList.remove("dragover"));
-    uploadArea.addEventListener("drop", e => {
-      e.preventDefault();
-      uploadArea.classList.remove("dragover");
-      handleFiles({ target: { files: e.dataTransfer.files } });
-    });
-
-    function handleFiles(e) {
-      selectedFiles = Array.from(e.target.files);
-      if (selectedFiles.length > 0) {
-        fileCount.textContent = `${selectedFiles.length} file(s) selected.`;
-        analyzeBtn.disabled = false;
-      } else {
-        fileCount.textContent = "";
-        analyzeBtn.disabled = true;
-      }
-    }
-
-    // 🚀 Connect to Flask backend
-    analyzeBtn.onclick = analyzeImages;
-
-    async function analyzeImages() {
-      analyzeBtn.disabled = true;
-      btnText.innerHTML = '<span class="loading-spinner me-2"></span>Processing...';
-      batchProgress.innerHTML = '';
-      results.innerHTML = '';
-      allResults = [];
-
-      const formData = new FormData();
-      selectedFiles.forEach(file => formData.append("images", file));
-
-      selectedFiles.forEach((file, i) => {
-        const item = document.createElement("div");
-        item.className = "batch-progress-item processing";
-        item.id = `progress-${i}`;
-        item.innerHTML = `
-          <i class="bi bi-image"></i>
-          <span class="flex-grow-1">${file.name}</span>
-          <span class="badge bg-primary">Processing...</span>
-        `;
-        batchProgress.appendChild(item);
-      });
-
-      try {
-        const response = await fetch("http://127.0.0.1:8080/api/analyze", {
-          method: "POST",
-          body: formData
+        uploadArea.addEventListener("click", (e) => {
+            if (e.target.id !== "select-files-btn") {
+                fileInput.click();
+            }
         });
-        const data = await response.json();
 
-        if (data.status === "success") {
-          data.results.forEach((r, i) => {
-            const item = document.getElementById(`progress-${i}`);
-            if (r.error) {
-              item.className = "batch-progress-item error";
-              item.querySelector(".badge").className = "badge bg-danger";
-              item.querySelector(".badge").textContent = "Error";
-              return;
+        selectFilesBtn.onclick = () => fileInput.click();
+
+        fileInput.onchange = () => {
+            selectedFiles = Array.from(fileInput.files);
+            if (selectedFiles.length > 0) {
+                fileCount.textContent = `${selectedFiles.length} file(s) selected`;
+                analyzeBtn.disabled = false;
+            }
+        };
+
+        uploadArea.ondragover = (e) => {
+            e.preventDefault();
+            uploadArea.classList.add("dragover");
+        };
+
+        uploadArea.ondragleave = () => {
+            uploadArea.classList.remove("dragover");
+        };
+
+        uploadArea.ondrop = (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove("dragover");
+            fileInput.files = e.dataTransfer.files;
+            fileInput.onchange();
+        };
+
+        analyzeBtn.onclick = async () => {
+            if (selectedFiles.length === 0) return;
+
+            allResults = [];
+            results.innerHTML = "";
+            status.innerHTML = "";
+            batchProgress.innerHTML = "";
+            actionBtns.style.display = "none";
+
+            analyzeBtn.disabled = true;
+            btnText.innerHTML = '<span class="loading-spinner me-2"></span>Processing...';
+
+            for (let i = 0; i < selectedFiles.length; i++) {
+                const file = selectedFiles[i];
+                const progressId = `progress-${i}`;
+
+                batchProgress.innerHTML += `
+                    <div class="batch-progress-item processing" id="${progressId}">
+                        <span class="loading-spinner me-3"></span>
+                        <span class="flex-grow-1">${file.name}</span>
+                        <i class="bi bi-hourglass-split"></i>
+                    </div>
+                `;
+
+                try {
+                    const formData = new FormData();
+                    formData.append("images", file);
+
+                    const response = await fetch("http://127.0.0.1:8080/api/analyze", {
+                        method: "POST",
+                        body: formData,
+                    });
+
+                    const data = await response.json();
+
+                    if (data.status === "success" && data.results && data.results.length > 0) {
+                        const result = data.results[0];
+                        
+                        let totalCount = 0;
+                        if (result.result && result.result.results && result.result.results.length > 0) {
+                            const predictions = result.result.results[0].predictions || [];
+                            totalCount = predictions.length;
+                        }
+
+                        allResults.push({
+                            filename: file.name,
+                            image_file: file,
+                            image_url: result.image_url,
+                            total_count: totalCount,
+                            result: result.result
+                        });
+
+                        document.getElementById(progressId).className = "batch-progress-item success";
+                        document.getElementById(progressId).innerHTML = `
+                            <i class="bi bi-check-circle-fill me-3"></i>
+                            <span class="flex-grow-1">${file.name}</span>
+                            <span class="badge bg-success">${totalCount} detected</span>
+                        `;
+                    } else {
+                        throw new Error(data.message || "Analysis failed");
+                    }
+                } catch (error) {
+                    document.getElementById(progressId).className = "batch-progress-item error";
+                    document.getElementById(progressId).innerHTML = `
+                        <i class="bi bi-x-circle-fill me-3"></i>
+                        <span class="flex-grow-1">${file.name}</span>
+                        <span class="badge bg-danger">Error</span>
+                    `;
+                }
             }
 
-            item.className = "batch-progress-item success";
-            item.querySelector(".badge").className = "badge bg-success";
-            item.querySelector(".badge").textContent = "✓ Done";
+            btnText.innerHTML = '<i class="bi bi-play-circle-fill me-2"></i>Analyze Images';
+            analyzeBtn.disabled = false;
 
-            const predictions = r.result.results[0]?.predictions || [];
-            const dataParsed = predictions.map((p, idx) => ({
-              oocyte_id: idx + 1,
-              quality: p.class === "good" ? "good" : "bad",
-              score: Math.round(p.confidence * 100),
-              confidence: p.confidence
-            }));
+            if (allResults.length > 0) {
+                displayResults();
+                actionBtns.style.display = "flex";
+            }
+        };
 
-            allResults.push({
-              filename: r.filename,
-              analysis_id: `A${Date.now()}-${i}`,
-              total_count: dataParsed.length,
-              data: dataParsed
+        function displayResults() {
+            results.innerHTML = "";
+
+            allResults.forEach((result, index) => {
+                const predictions = result.result?.results?.[0]?.predictions || [];
+                
+                let detectionRows = "";
+                predictions.forEach((pred, i) => {
+                    const qualityBadge = pred.class === "good" 
+                        ? '<span class="badge bg-success">Good</span>' 
+                        : '<span class="badge bg-danger">Bad</span>';
+                    
+                    detectionRows += `
+                        <tr>
+                            <td>${i + 1}</td>
+                            <td>${pred.class}</td>
+                            <td>${qualityBadge}</td>
+                            <td>${(pred.confidence * 100).toFixed(2)}%</td>
+                        </tr>
+                    `;
+                });
+
+                results.innerHTML += `
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="bi bi-image me-2"></i>${result.filename}
+                                <span class="badge bg-light text-dark ms-2">With Bounding Boxes</span>
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <img src="${result.image_url}" class="img-fluid rounded" alt="${result.filename}" style="max-height: 400px; object-fit: contain; display: block; margin: 0 auto;">
+                                </div>
+                                <div class="col-md-6">
+                                    <h6 class="fw-bold">Detection Summary</h6>
+                                    <p class="mb-3"><strong>Total Oocytes Detected:</strong> ${result.total_count}</p>
+                                    
+                                    ${predictions.length > 0 ? `
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-hover">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th>#</th>
+                                                        <th>Class</th>
+                                                        <th>Quality</th>
+                                                        <th>Confidence</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    ${detectionRows}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    ` : '<p class="text-muted">No oocytes detected in this image.</p>'}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
             });
-          });
-
-          displayResults();
-          analyzeBtn.disabled = false;
-          btnText.textContent = `Analyze Images`;
-          actionBtns.style.display = "flex";
-          status.innerHTML = '<i class="bi bi-check-circle-fill text-success"></i> Analysis complete!';
-        } else {
-          alert("Error: " + JSON.stringify(data));
         }
-      } catch (err) {
-        console.error(err);
-        alert("❌ Failed to connect to backend!");
-      }
-    }
 
-    // 🧾 Display results
-    function displayResults() {
-  results.innerHTML = '';
-  allResults.forEach((r, index) => {
-    const card = document.createElement("div");
-    card.className = "card mb-3 shadow-sm";
+        resetBtn.onclick = () => {
+            selectedFiles = [];
+            allResults = [];
+            fileInput.value = "";
+            fileCount.textContent = "";
+            results.innerHTML = "";
+            status.innerHTML = "";
+            batchProgress.innerHTML = "";
+            actionBtns.style.display = "none";
+            analyzeBtn.disabled = true;
+            btnText.innerHTML = '<i class="bi bi-play-circle-fill me-2"></i>Analyze Images';
+        };
 
-    const imageSection = r.image_url 
-      ? `<img src="${r.image_url}" class="img-fluid rounded mt-2 mb-3" alt="Analyzed Image">`
-      : `<div class="text-muted fst-italic">No visualization available</div>`;
+        downloadBtn.onclick = () => {
+            const blob = new Blob([JSON.stringify(allResults, null, 2)], { type: "application/json" });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "analysis_results.json";
+            link.click();
+        };
 
-    card.innerHTML = `
-      <div class="card-body">
-        <h5 class="card-title">${r.filename}</h5>
-        <p class="text-muted">Analysis ID: ${r.analysis_id}</p>
-        <p><strong>Total Detections:</strong> ${r.total_count}</p>
-        ${imageSection}
-        <table class="table table-bordered table-sm mt-3">
-          <thead class="table-light">
-            <tr>
-              <th>#</th>
-              <th>Quality</th>
-              <th>Score</th>
-              <th>Confidence</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${r.data.map(d => `
-              <tr>
-                <td>${d.oocyte_id}</td>
-                <td>${d.quality}</td>
-                <td>${d.score}</td>
-                <td>${(d.confidence * 100).toFixed(2)}%</td>
-              </tr>
-            `).join("")}
-          </tbody>
-        </table>
-      </div>
-    `;
-    results.appendChild(card);
-  });
-}
+        const downloadPdfBtn = document.getElementById("download-pdf-btn");
+        downloadPdfBtn.onclick = async () => {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const pageHeight = doc.internal.pageSize.getHeight();
+            const margin = 15;
+            const contentWidth = pageWidth - 2 * margin;
+            let yPosition = margin;
 
+            const checkNewPage = (requiredSpace) => {
+                if (yPosition + requiredSpace > pageHeight - margin) {
+                    doc.addPage();
+                    yPosition = margin;
+                    return true;
+                }
+                return false;
+            };
 
-    // 🔁 Reset button
-    resetBtn.onclick = () => {
-      selectedFiles = [];
-      allResults = [];
-      fileCount.textContent = '';
-      analyzeBtn.disabled = true;
-      batchProgress.innerHTML = '';
-      results.innerHTML = '';
-      actionBtns.style.display = 'none';
-      status.innerHTML = '';
-      btnText.textContent = 'Analyze Images';
-    };
+            doc.setFillColor(226, 252, 214);
+            doc.rect(0, 0, pageWidth, 55, 'F');
+            
+            for (let i = 0; i < 55; i++) {
+                const alpha = i / 55;
+                const r = Math.round(226 + (20 - 226) * alpha);
+                const g = Math.round(252 + (150 - 252) * alpha);
+                const b = Math.round(214 + (127 - 214) * alpha);
+                doc.setFillColor(r, g, b);
+                doc.rect(0, i, pageWidth, 1, 'F');
+            }
+            
+            doc.setFillColor(9, 93, 126);
+            doc.rect(0, 0, pageWidth, 3, 'F');
+            
+            doc.setFillColor(204, 236, 238);
+            doc.circle(10, 10, 8, 'F');
+            doc.circle(pageWidth - 10, 10, 8, 'F');
+            
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(28);
+            doc.setFont(undefined, 'bold');
+            doc.text('BioAI Platform', pageWidth / 2, 20, { align: 'center' });
+            
+            doc.setFontSize(20);
+            doc.text('🔬', pageWidth / 2 - 40, 19);
+            doc.text('🧬', pageWidth / 2 + 40, 19);
+            
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(16);
+            doc.setFont(undefined, 'bold');
+            doc.text('Analysis Report', pageWidth / 2, 32, { align: 'center' });
+            
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'normal');
+            doc.setTextColor(240, 248, 255);
+            doc.text('Oocyte Quality Assessment & Detection Results', pageWidth / 2, 41, { align: 'center' });
+            
+            doc.setFillColor(255, 255, 255);
+            for (let i = 0; i < pageWidth; i += 10) {
+                doc.circle(i, 52, 1, 'F');
+            }
+            
+            yPosition = 62;
 
-    // 💾 Download JSON
-    downloadBtn.onclick = () => {
-      const blob = new Blob([JSON.stringify(allResults, null, 2)], { type: "application/json" });
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = "analysis_results.json";
-      link.click();
-    };
-  </script>
+            const patientName = document.getElementById('patient-name').value || 'Not specified';
+            const patientDob = document.getElementById('patient-dob').value || 'Not specified';
+            
+            if (patientName !== 'Not specified' || patientDob !== 'Not specified') {
+                doc.setFillColor(226, 252, 214);
+                doc.roundedRect(margin, yPosition, contentWidth, 20, 2, 2, 'F');
+                
+                doc.setTextColor(9, 93, 126);
+                doc.setFontSize(10);
+                doc.setFont(undefined, 'bold');
+                doc.text('Patient Information', margin + 5, yPosition + 7);
+                
+                doc.setTextColor(0, 0, 0);
+                doc.setFont(undefined, 'normal');
+                doc.setFontSize(9);
+                doc.text(`Name: ${patientName}`, margin + 5, yPosition + 13);
+                doc.text(`Date of Birth: ${patientDob}`, margin + 5, yPosition + 18);
+                
+                yPosition += 25;
+            }
+
+            doc.setTextColor(9, 93, 126);
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'bold');
+            doc.text('Report Details', margin, yPosition);
+            yPosition += 7;
+
+            doc.setTextColor(0, 0, 0);
+            doc.setFont(undefined, 'normal');
+            doc.setFontSize(9);
+            doc.text(`Generated: ${new Date().toLocaleString()}`, margin, yPosition);
+            yPosition += 5;
+            doc.text(`Total Images Analyzed: ${allResults.length}`, margin, yPosition);
+            yPosition += 5;
+            
+            const totalDetections = allResults.reduce((sum, r) => sum + r.total_count, 0);
+            doc.text(`Total Oocytes Detected: ${totalDetections}`, margin, yPosition);
+            yPosition += 12;
+
+            for (let index = 0; index < allResults.length; index++) {
+                const result = allResults[index];
+                checkNewPage(60);
+
+                doc.setFillColor(20, 150, 127);
+                doc.roundedRect(margin, yPosition - 5, contentWidth, 10, 2, 2, 'F');
+                
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(11);
+                doc.setFont(undefined, 'bold');
+                doc.text(`Image ${index + 1}: ${result.filename}`, margin + 3, yPosition + 2);
+                
+                yPosition += 12;
+                doc.setTextColor(0, 0, 0);
+
+                try {
+                    let imgData;
+                    if (result.image_url.startsWith('http')) {
+                        const response = await fetch(result.image_url);
+                        const blob = await response.blob();
+                        imgData = await loadImageAsBase64FromBlob(blob);
+                    } else {
+                        imgData = await loadImageAsBase64(result.image_file);
+                    }
+                    
+                    const imgWidth = contentWidth * 0.6;
+                    const imgHeight = 80;
+                    checkNewPage(imgHeight + 10);
+                    
+                    doc.addImage(imgData, 'JPEG', margin, yPosition, imgWidth, imgHeight);
+                    yPosition += imgHeight + 5;
+                } catch (error) {
+                    doc.setTextColor(255, 0, 0);
+                    doc.setFontSize(9);
+                    doc.text('Image could not be loaded', margin, yPosition);
+                    yPosition += 10;
+                    doc.setTextColor(0, 0, 0);
+                }
+
+                doc.setFontSize(10);
+                doc.setFont(undefined, 'bold');
+                doc.text(`Total Detected: ${result.total_count}`, margin, yPosition);
+                yPosition += 7;
+
+                if (result.result?.results?.[0]?.predictions?.length > 0) {
+                    const predictions = result.result.results[0].predictions;
+                    
+                    checkNewPage(10 + predictions.length * 7);
+                    
+                    doc.setFillColor(226, 252, 214);
+                    doc.rect(margin, yPosition, contentWidth, 8, 'F');
+                    
+                    doc.setFontSize(9);
+                    doc.setFont(undefined, 'bold');
+                    doc.text('#', margin + 2, yPosition + 5);
+                    doc.text('Class', margin + 15, yPosition + 5);
+                    doc.text('Quality', margin + 60, yPosition + 5);
+                    doc.text('Confidence', margin + 100, yPosition + 5);
+                    yPosition += 8;
+
+                    doc.setFont(undefined, 'normal');
+                    predictions.forEach((pred, i) => {
+                        if (i % 2 === 0) {
+                            doc.setFillColor(248, 250, 252);
+                            doc.rect(margin, yPosition, contentWidth, 7, 'F');
+                        }
+                        
+                        doc.text(`${i + 1}`, margin + 2, yPosition + 5);
+                        doc.text(pred.class, margin + 15, yPosition + 5);
+                        
+                        if (pred.class === "good") {
+                            doc.setTextColor(25, 135, 84);
+                            doc.text('Good', margin + 60, yPosition + 5);
+                        } else {
+                            doc.setTextColor(220, 53, 69);
+                            doc.text('Bad', margin + 60, yPosition + 5);
+                        }
+                        doc.setTextColor(0, 0, 0);
+                        
+                        doc.text(`${(pred.confidence * 100).toFixed(2)}%`, margin + 100, yPosition + 5);
+                        yPosition += 7;
+                    });
+                }
+
+                yPosition += 10;
+            }
+
+            const totalPages = doc.internal.pages.length - 1;
+            for (let i = 1; i <= totalPages; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.setTextColor(128, 128, 128);
+                doc.text(`Page ${i} of ${totalPages}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+                doc.text('Generated by BioAI Platform', pageWidth / 2, pageHeight - 6, { align: 'center' });
+            }
+
+            doc.save("BioAI_Analysis_Report.pdf");
+        };
+
+        function loadImageAsBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function loadImageAsBase64FromBlob(blob) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            });
+        }
+    </script>
 </body>
 </html>
