@@ -1,943 +1,293 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quick Demo - BioAI Platform</title>
-    
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-    
-    <style>
-        :root {
-            --primary-color: #1a4f78;
-            --secondary-color: #007bff;
-            --success-color: #28a745;
-        }
-        
-        body { 
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            min-height: 100vh;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        }
-        
-        .navbar { 
-            background: linear-gradient(135deg, var(--primary-color) 0%, #2d5f8f 100%) !important;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-        }
-        
-        .upload-area {
-            border: 3px dashed var(--secondary-color);
-            border-radius: 15px;
-            padding: 60px 40px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            background: white;
-        }
-        
-        .upload-area:hover { 
-            background: linear-gradient(135deg, #e9f5ff 0%, #d4ebff 100%);
-            border-color: var(--success-color);
-            transform: scale(1.02);
-        }
-        
-        .image-preview-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 15px;
-            margin-top: 20px;
-        }
-        
-        .image-preview-item {
-            position: relative;
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-        
-        .image-preview-item img {
-            width: 100%;
-            height: 150px;
-            object-fit: cover;
-        }
-        
-        .remove-btn {
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            background: rgba(220, 53, 69, 0.9);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            cursor: pointer;
-            font-size: 18px;
-            line-height: 1;
-        }
-        
-        .remove-btn:hover {
-            background: rgb(220, 53, 69);
-        }
-        
-        .image-count-badge {
-            position: absolute;
-            bottom: 5px;
-            left: 5px;
-            background: rgba(26, 79, 120, 0.9);
-            color: white;
-            padding: 3px 8px;
-            border-radius: 5px;
-            font-size: 0.85rem;
-        }
-        
-        .batch-progress-item {
-            padding: 10px;
-            background: #f8f9fa;
-            border-radius: 5px;
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .batch-progress-item.processing {
-            background: #e3f2fd;
-        }
-        
-        .batch-progress-item.success {
-            background: #e8f5e9;
-        }
-        
-        .batch-progress-item.error {
-            background: #ffebee;
-        }
-        
-        .stat-card {
-            border-radius: 15px;
-            padding: 20px;
-            text-align: center;
-        }
-        
-        .stat-number {
-            font-size: 2rem;
-            font-weight: bold;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BioAI - Batch Image Analyzer</title>
+
+  <!-- Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+  
+  <style>
+    body {
+      background-color: #f8fafc;
+      font-family: "Inter", sans-serif;
+    }
+    .upload-area {
+      border: 2px dashed #94a3b8;
+      border-radius: 16px;
+      background-color: #fff;
+      padding: 40px;
+      text-align: center;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+    .upload-area.dragover {
+      border-color: #3b82f6;
+      background-color: #eff6ff;
+    }
+    .upload-area input[type="file"] {
+      display: none;
+    }
+    .results-area {
+      margin-top: 2rem;
+    }
+    .batch-progress-item {
+      display: flex;
+      align-items: center;
+      padding: 10px 15px;
+      background: #fff;
+      border-radius: 12px;
+      margin-bottom: 10px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .batch-progress-item.processing i {
+      color: #0d6efd;
+    }
+    .batch-progress-item.success i {
+      color: #198754;
+    }
+    .batch-progress-item.error i {
+      color: #dc3545;
+    }
+    .loading-spinner {
+      width: 20px;
+      height: 20px;
+      border: 3px solid #cbd5e1;
+      border-top: 3px solid #0d6efd;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      display: inline-block;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
 </head>
+
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark">
-        <div class="container">
-            <a class="navbar-brand fw-bold" href="index.html">🔬 BioAI Platform</a>
-            <div class="navbar-nav ms-auto">
-                <a class="nav-link" href="index.html">Home</a>
-                <a class="nav-link active" href="demo.html">Demo</a>
-                <a class="nav-link btn btn-outline-light ms-2 px-3" href="login.html">Login</a>
-            </div>
-        </div>
-    </nav>
+  <div class="container py-5">
+    <h1 class="text-center mb-4 fw-bold">🧠 BioAI - Batch Image Analyzer</h1>
 
-    <div class="container my-5">
-        <div class="text-center mb-5">
-            <h1 class="display-4 fw-bold text-primary">Oocyte Analysis Demo</h1>
-            <p class="lead text-muted">Upload an oocyte image to see AI-powered grading in action</p>
-        </div>
-
-        <div class="row">
-            <div class="col-lg-5 mb-4">
-                <div class="card p-4 shadow-lg">
-                    <h5 class="card-title text-primary mb-4">
-                        <i class="bi bi-upload"></i> Upload Images
-                    </h5>
-                    
-                    <div id="drop-area" class="upload-area mb-3">
-                        <i class="bi bi-cloud-arrow-up-fill h1 text-primary"></i>
-                        <p class="mb-0 fw-bold">Click or Drag & Drop</p>
-                        <p class="small text-muted">Maximum 5 images (.jpg, .png)</p>
-                        <input type="file" id="fileInput" accept="image/*" multiple style="display:none">
-                    </div>
-                    
-                    <div id="preview" class="image-preview-container"></div>
-                    
-                    <div id="batchProgress" class="mt-3"></div>
-                    
-                    <button id="analyzeBtn" class="btn btn-success btn-lg w-100 mt-3" disabled>
-                        <span id="btnText">Select Images to Analyze</span>
-                    </button>
-                    
-                    <div class="d-flex gap-2 mt-2" id="actionBtns" style="display:none !important">
-                        <button class="btn btn-outline-primary btn-sm flex-fill" onclick="clearAll()">
-                            <i class="bi bi-arrow-counterclockwise"></i> Clear
-                        </button>
-                        <button class="btn btn-outline-success btn-sm flex-fill" onclick="downloadReport()">
-                            <i class="bi bi-download"></i> Report
-                        </button>
-                    </div>
-                    
-                    <div id="status" class="mt-3 text-center small text-muted">
-                        <i class="bi bi-info-circle"></i> Upload up to 5 images...
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-lg-7">
-                <div class="card p-4 shadow-lg">
-                    <h5 class="card-title text-success mb-4">
-                        <i class="bi bi-graph-up"></i> Analysis Results
-                    </h5>
-                    <div id="results" style="max-height: 600px; overflow-y: auto;">
-                        <div class="alert alert-light text-center">
-                            <i class="bi bi-image h1 text-muted"></i>
-                            <p class="mb-0">Upload images to view analysis results.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <!-- Upload Section -->
+    <div class="upload-area" id="upload-area">
+      <i class="bi bi-cloud-arrow-up display-4 text-primary"></i>
+      <h5 class="mt-3">Drag & Drop your images here</h5>
+      <p class="text-muted mb-2">or click to select multiple files</p>
+      <input type="file" id="file-input" accept=".jpg,.jpeg,.png" multiple>
+      <button class="btn btn-primary mt-3" id="select-files-btn">Select Files</button>
+      <p class="text-muted small mt-2" id="file-count"></p>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        console.log('✅ Script loaded!');
-        
-        const API_URL = 'http://localhost:8000/api/v1/analysis/submit';
-        const MAX_FILES = 5;
-        
-        const dropArea = document.getElementById('drop-area');
-        const fileInput = document.getElementById('fileInput');
-        const preview = document.getElementById('preview');
-        const analyzeBtn = document.getElementById('analyzeBtn');
-        const btnText = document.getElementById('btnText');
-        const status = document.getElementById('status');
-        const batchProgress = document.getElementById('batchProgress');
-        const results = document.getElementById('results');
-        const actionBtns = document.getElementById('actionBtns');
-        
-        let selectedFiles = [];
-        let allResults = [];
-        
-        // Click to upload
-        dropArea.addEventListener('click', () => {
-            console.log('✅ Drop area clicked!');
-            fileInput.click();
-        });
-        
-        // File selection
-        fileInput.addEventListener('change', (e) => {
-            console.log('✅ Files selected:', e.target.files.length);
-            handleFiles(Array.from(e.target.files));
-        });
-        
-        // Drag and drop
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            dropArea.addEventListener(eventName, e => {
-                e.preventDefault();
-                e.stopPropagation();
-            });
-        });
-        
-        dropArea.addEventListener('drop', (e) => {
-            console.log('✅ Files dropped:', e.dataTransfer.files.length);
-            const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
-            handleFiles(files);
-        });
-        
-        function handleFiles(files) {
-            const remainingSlots = MAX_FILES - selectedFiles.length;
-            
-            if (remainingSlots <= 0) {
-                alert(`⚠️ Maximum ${MAX_FILES} images allowed!`);
-                return;
-            }
-            
-            const filesToAdd = files.slice(0, remainingSlots);
-            
-            if (files.length > remainingSlots) {
-                alert(`⚠️ Only ${remainingSlots} more image(s) can be added.`);
-            }
-            
-            selectedFiles = [...selectedFiles, ...filesToAdd];
-            console.log('📊 Total files:', selectedFiles.length);
-            
-            updatePreview();
-            updateStatus();
-        }
-        
-        function updatePreview() {
-            preview.innerHTML = '';
-            
-            selectedFiles.forEach((file, index) => {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const div = document.createElement('div');
-                    div.className = 'image-preview-item';
-                    div.innerHTML = `
-                        <img src="${e.target.result}" alt="${file.name}">
-                        <button class="remove-btn" onclick="removeFile(${index})" title="Remove">×</button>
-                        <span class="image-count-badge">#${index + 1}</span>
-                    `;
-                    preview.appendChild(div);
-                };
-                reader.readAsDataURL(file);
-            });
-        }
-        
-        function removeFile(index) {
-            console.log('🗑️ Removing file:', index);
-            selectedFiles.splice(index, 1);
-            updatePreview();
-            updateStatus();
-        }
-        
-        function updateStatus() {
-            if (selectedFiles.length > 0) {
-                analyzeBtn.disabled = false;
-                btnText.textContent = `Analyze ${selectedFiles.length} Image${selectedFiles.length > 1 ? 's' : ''}`;
-                status.innerHTML = `<i class="bi bi-check-circle-fill text-success"></i> ${selectedFiles.length}/${MAX_FILES} images ready`;
-            } else {
-                analyzeBtn.disabled = true;
-                btnText.textContent = 'Select Images to Analyze';
-                status.innerHTML = `<i class="bi bi-info-circle"></i> Upload up to ${MAX_FILES} images...`;
-            }
-        }
-        
-        // Analyze button
-        analyzeBtn.addEventListener('click', async () => {
-            console.log('🚀 Starting analysis...');
-            
-            analyzeBtn.disabled = true;
-            btnText.textContent = 'Processing...';
-            batchProgress.innerHTML = '';
-            allResults = [];
-            
-            // Show progress items
-            selectedFiles.forEach((file, i) => {
-                const item = document.createElement('div');
-                item.className = 'batch-progress-item';
-                item.id = `progress-${i}`;
-                item.innerHTML = `
-                    <i class="bi bi-image"></i>
-                    <span class="flex-grow-1">${file.name}</span>
-                    <span class="badge bg-secondary">Waiting...</span>
-                `;
-                batchProgress.appendChild(item);
-            });
-            
-            // Process each image
-            for (let i = 0; i < selectedFiles.length; i++) {
-                const file = selectedFiles[i];
-                const item = document.getElementById(`progress-${i}`);
-                
-                try {
-                    item.className = 'batch-progress-item processing';
-                    item.querySelector('.badge').className = 'badge bg-primary';
-                    item.querySelector('.badge').textContent = 'Processing...';
-                    
-                    console.log(`📤 Uploading ${i+1}/${selectedFiles.length}: ${file.name}`);
-                    
-                    const formData = new FormData();
-                    formData.append('file', file);
-                    
-                    const response = await fetch(API_URL, {
-                        method: 'POST',
-                        body: formData
-                    });
-                    
-                    const data = await response.json();
-                    console.log(`✅ Result ${i+1}:`, data);
-                    
-                    if (response.ok) {
-                        allResults.push({ filename: file.name, ...data });
-                        item.className = 'batch-progress-item success';
-                        item.querySelector('.badge').className = 'badge bg-success';
-                        item.querySelector('.badge').textContent = `✓ ${data.total_count} detected`;
-                    } else {
-                        throw new Error(data.error || 'Analysis failed');
-                    }
-                    
-                } catch (error) {
-                    console.error(`❌ Error ${i+1}:`, error);
-                    allResults.push({ filename: file.name, error: error.message });
-                    item.className = 'batch-progress-item error';
-                    item.querySelector('.badge').className = 'badge bg-danger';
-                    item.querySelector('.badge').textContent = '✗ Failed';
-                }
-            }
-            
-            displayResults();
-            
-            analyzeBtn.disabled = false;
-            btnText.textContent = `Analyze ${selectedFiles.length} Images`;
-            actionBtns.style.display = 'flex';
-            status.innerHTML = '<i class="bi bi-check-circle-fill text-success"></i> Analysis complete!';
-            
-            console.log('🎉 All done!');
-        });
-        
-        function displayResults() {
-            let html = '';
-            
-            // Calculate totals
-            let totalOocytes = 0;
-            let totalA = 0, totalB = 0, totalC = 0;
-            
-            allResults.forEach(r => {
-                if (!r.error && r.data) {
-                    totalOocytes += r.total_count;
-                    r.data.forEach(o => {
-                        const grade = o.who_grading.grade;
-                        if (grade.includes('A') || grade.includes('Tốt')) totalA++;
-                        else if (grade.includes('B') || grade.includes('Trung bình')) totalB++;
-                        else totalC++;
-                    });
-                }
-            });
-            
-            // Summary
-            html += `
-                <div class="mb-4">
-                    <h6 class="text-success mb-3">✓ Batch Analysis Complete</h6>
-                    <div class="row g-2">
-                        <div class="col-3">
-                            <div class="stat-card bg-info text-white">
-                                <div class="stat-number">${selectedFiles.length}</div>
-                                <small>Images</small>
-                            </div>
-                        </div>
-                        <div class="col-3">
-                            <div class="stat-card bg-primary text-white">
-                                <div class="stat-number">${totalOocytes}</div>
-                                <small>Total</small>
-                            </div>
-                        </div>
-                        <div class="col-2">
-                            <div class="stat-card bg-success text-white">
-                                <div class="stat-number">${totalA}</div>
-                                <small>A</small>
-                            </div>
-                        </div>
-                        <div class="col-2">
-                            <div class="stat-card bg-warning text-dark">
-                                <div class="stat-number">${totalB}</div>
-                                <small>B</small>
-                            </div>
-                        </div>
-                        <div class="col-2">
-                            <div class="stat-card bg-danger text-white">
-                                <div class="stat-number">${totalC}</div>
-                                <small>C</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <hr>
-                <h6 class="text-primary mb-3">Individual Results</h6>
-            `;
-            
-            // Individual results
-            allResults.forEach((r, i) => {
-                if (r.error) {
-                    html += `
-                        <div class="alert alert-danger">
-                            <strong>${r.filename}</strong><br>
-                            Error: ${r.error}
-                        </div>
-                    `;
-                } else {
-                    const gradeA = r.data.filter(o => o.who_grading.grade.includes('A') || o.who_grading.grade.includes('Tốt')).length;
-                    const gradeB = r.data.filter(o => o.who_grading.grade.includes('B') || o.who_grading.grade.includes('Trung bình')).length;
-                    const gradeC = r.data.filter(o => o.who_grading.grade.includes('C') || o.who_grading.grade.includes('Kém')).length;
-                    
-                    html += `
-                        <div class="card mb-3">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between mb-2">
-                                    <strong><i class="bi bi-image"></i> ${r.filename}</strong>
-                                    <span class="badge bg-secondary">${r.analysis_id}</span>
-                                </div>
-                                <div class="row g-2 mb-2">
-                                    <div class="col-3 text-center">
-                                        <div class="bg-light p-2 rounded">
-                                            <strong>${r.total_count}</strong><br>
-                                            <small>Total</small>
-                                        </div>
-                                    </div>
-                                    <div class="col-3 text-center">
-                                        <div class="bg-success bg-opacity-10 p-2 rounded">
-                                            <strong class="text-success">${gradeA}</strong><br>
-                                            <small>Grade A</small>
-                                        </div>
-                                    </div>
-                                    <div class="col-3 text-center">
-                                        <div class="bg-warning bg-opacity-10 p-2 rounded">
-                                            <strong class="text-warning">${gradeB}</strong><br>
-                                            <small>Grade B</small>
-                                        </div>
-                                    </div>
-                                    <div class="col-3 text-center">
-                                        <div class="bg-danger bg-opacity-10 p-2 rounded">
-                                            <strong class="text-danger">${gradeC}</strong><br>
-                                            <small>Grade C</small>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                }
-            });
-            
-            results.innerHTML = html;
-        }
-        
-        function clearAll() {
-            selectedFiles = [];
-            allResults = [];
-            preview.innerHTML = '';
-            batchProgress.innerHTML = '';
-            results.innerHTML = `
-                <div class="alert alert-light text-center">
-                    <i class="bi bi-image h1 text-muted"></i>
-                    <p class="mb-0">Upload images to view analysis results.</p>
-                </div>
-            `;
-            fileInput.value = '';
-            actionBtns.style.display = 'none';
-            updateStatus();
-            console.log('🧹 Cleared all');
-        }
-        
-        function downloadReport() {
-            if (allResults.length === 0) return;
-            
-            console.log('📄 Generating PDF report...');
-            
-            // Calculate statistics
-            let totalOocytes = 0;
-            let totalA = 0, totalB = 0, totalC = 0;
-            
-            allResults.forEach(r => {
-                if (!r.error && r.data) {
-                    totalOocytes += r.total_count;
-                    r.data.forEach(o => {
-                        const grade = o.who_grading.grade;
-                        if (grade.includes('A') || grade.includes('Tốt')) totalA++;
-                        else if (grade.includes('B') || grade.includes('Trung bình')) totalB++;
-                        else totalC++;
-                    });
-                }
-            });
-            
-            // Create PDF content HTML
-            const reportHTML = `
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <style>
-        @page {
-            size: A4;
-            margin: 5mm;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            max-width: 210mm;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        
-        .header {
-            background: linear-gradient(135deg, #1a4f78 0%, #2d5f8f 100%);
-            color: white;
-            padding: 30px;
-            border-radius: 10px;
-            margin-bottom: 30px;
-            text-align: center;
-        }
-        
-        .header h1 {
-            margin: 0;
-            font-size: 32px;
-            font-weight: bold;
-        }
-        
-        .header .subtitle {
-            font-size: 16px;
-            opacity: 0.9;
-            margin-top: 10px;
-        }
-        
-        .header .icon {
-            font-size: 48px;
-            margin-bottom: 10px;
-        }
-        
-        .info-box {
-            background: #f8f9fa;
-            border-left: 4px solid #1a4f78;
-            padding: 15px;
-            margin-bottom: 20px;
-            border-radius: 5px;
-        }
-        
-        .info-box strong {
-            color: #1a4f78;
-        }
-        
-        .summary {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-        
-        .stat-card {
-            background: white;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            padding: 20px;
-            text-align: center;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-        
-        .stat-card.primary {
-            border-color: #007bff;
-            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
-            color: white;
-        }
-        
-        .stat-card.success {
-            border-color: #28a745;
-            background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
-            color: white;
-        }
-        
-        .stat-card.warning {
-            border-color: #ffc107;
-            background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
-            color: #333;
-        }
-        
-        .stat-card.danger {
-            border-color: #dc3545;
-            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
-            color: white;
-        }
-        
-        .stat-number {
-            font-size: 48px;
-            font-weight: bold;
-            line-height: 1;
-        }
-        
-        .stat-label {
-            font-size: 14px;
-            margin-top: 5px;
-            opacity: 0.9;
-        }
-        
-        .section-title {
-            font-size: 24px;
-            font-weight: bold;
-            color: #1a4f78;
-            margin: 30px 0 15px 0;
-            padding-bottom: 10px;
-            border-bottom: 3px solid #1a4f78;
-        }
-        
-        .image-result {
-            background: white;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-            page-break-inside: avoid;
-        }
-        
-        .image-result-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #f0f0f0;
-        }
-        
-        .image-name {
-            font-size: 18px;
-            font-weight: bold;
-            color: #1a4f78;
-        }
-        
-        .analysis-id {
-            background: #e9ecef;
-            padding: 5px 10px;
-            border-radius: 5px;
-            font-size: 12px;
-            color: #666;
-        }
-        
-        .mini-stats {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-        
-        .mini-stat {
-            text-align: center;
-            padding: 10px;
-            border-radius: 8px;
-        }
-        
-        .mini-stat.total {
-            background: #e3f2fd;
-            color: #1976d2;
-        }
-        
-        .mini-stat.grade-a {
-            background: #e8f5e9;
-            color: #388e3c;
-        }
-        
-        .mini-stat.grade-b {
-            background: #fff3e0;
-            color: #f57c00;
-        }
-        
-        .mini-stat.grade-c {
-            background: #ffebee;
-            color: #d32f2f;
-        }
-        
-        .mini-stat-number {
-            font-size: 24px;
-            font-weight: bold;
-        }
-        
-        .mini-stat-label {
-            font-size: 11px;
-            margin-top: 3px;
-        }
-        
-        .oocyte-list {
-            background: #f8f9fa;
-            border-radius: 8px;
-            padding: 15px;
-        }
-        
-        .oocyte-item {
-            background: white;
-            border-left: 4px solid #dee2e6;
-            padding: 12px;
-            margin-bottom: 10px;
-            border-radius: 5px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .oocyte-item.grade-a {
-            border-left-color: #28a745;
-        }
-        
-        .oocyte-item.grade-b {
-            border-left-color: #ffc107;
-        }
-        
-        .oocyte-item.grade-c {
-            border-left-color: #dc3545;
-        }
-        
-        .oocyte-info {
-            flex: 1;
-        }
-        
-        .oocyte-id {
-            font-weight: bold;
-            color: #1a4f78;
-            font-size: 16px;
-        }
-        
-        .oocyte-grade {
-            font-size: 14px;
-            color: #666;
-            margin-top: 3px;
-        }
-        
-        .oocyte-score {
-            font-size: 32px;
-            font-weight: bold;
-            color: #1a4f78;
-        }
-        
-        .error-box {
-            background: #ffebee;
-            border-left: 4px solid #dc3545;
-            padding: 15px;
-            border-radius: 5px;
-            color: #c82333;
-        }
-        
-        .footer {
-            margin-top: 40px;
-            padding-top: 20px;
-            border-top: 2px solid #e0e0e0;
-            text-align: center;
-            color: #666;
-            font-size: 12px;
-        }
-        
-        .footer-logo {
-            font-size: 24px;
-            color: #1a4f78;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-        
-        @media print {
-            body {
-                print-color-adjust: exact;
-                -webkit-print-color-adjust: exact;
-            }
-        }
-    </style>
-</head>
-<body>
-    <!-- Header -->
-    <div class="header">
-        <div class="icon">🔬</div>
-        <h1>BioAI Oocyte Analysis Report</h1>
-        <div class="subtitle">AI-Powered Grading Platform</div>
+    <!-- Analyze Button -->
+    <div class="text-center mt-4">
+      <button class="btn btn-success btn-lg" id="analyze-btn" disabled>
+        <span id="btn-text">Analyze Images</span>
+      </button>
     </div>
-    
-    <!-- Report Info -->
-    <div class="info-box">
-        <strong>Report Generated:</strong> ${new Date().toLocaleString()}<br>
-        <strong>Total Images Analyzed:</strong> ${selectedFiles.length}<br>
-        <strong>Total Oocytes Detected:</strong> ${totalOocytes}
+
+    <!-- Progress Section -->
+    <div id="batch-progress" class="mt-4"></div>
+
+    <!-- Results Section -->
+    <div id="results" class="results-area mt-4"></div>
+
+    <!-- Action Buttons -->
+    <div id="action-btns" class="text-center mt-4" style="display: none;">
+      <button class="btn btn-outline-secondary me-2" id="reset-btn">Reset</button>
+      <button class="btn btn-outline-primary" id="download-btn">Download JSON</button>
     </div>
-    
-    <!-- Overall Summary -->
-    <h2 class="section-title">📊 Overall Summary</h2>
-    <div class="summary">
-        <div class="stat-card primary">
-            <div class="stat-number">${totalOocytes}</div>
-            <div class="stat-label">Total Oocytes</div>
-        </div>
-        <div class="stat-card success">
-            <div class="stat-number">${totalA}</div>
-            <div class="stat-label">Grade A<br>(${totalOocytes > 0 ? ((totalA/totalOocytes)*100).toFixed(1) : 0}%)</div>
-        </div>
-        <div class="stat-card warning">
-            <div class="stat-number">${totalB}</div>
-            <div class="stat-label">Grade B<br>(${totalOocytes > 0 ? ((totalB/totalOocytes)*100).toFixed(1) : 0}%)</div>
-        </div>
-        <div class="stat-card danger">
-            <div class="stat-number">${totalC}</div>
-            <div class="stat-label">Grade C<br>(${totalOocytes > 0 ? ((totalC/totalOocytes)*100).toFixed(1) : 0}%)</div>
-        </div>
-    </div>
-    
-    <!-- Individual Results -->
-    <h2 class="section-title">🖼️ Individual Image Results</h2>
-    
-    ${allResults.map((r, index) => {
-        if (r.error) {
-            return `
-                <div class="image-result">
-                    <div class="image-result-header">
-                        <div class="image-name">📷 ${r.filename}</div>
-                    </div>
-                    <div class="error-box">
-                        <strong>❌ Analysis Failed</strong><br>
-                        Error: ${r.error}
-                    </div>
-                </div>
-            `;
-        }
-        
-        const gradeA = r.data.filter(o => o.who_grading.grade.includes('A') || o.who_grading.grade.includes('Tốt')).length;
-        const gradeB = r.data.filter(o => o.who_grading.grade.includes('B') || o.who_grading.grade.includes('Trung bình')).length;
-        const gradeC = r.data.filter(o => o.who_grading.grade.includes('C') || o.who_grading.grade.includes('Kém')).length;
-        
-        return `
-            <div class="image-result">
-                <div class="image-result-header">
-                    <div class="image-name">📷 Image ${index + 1}: ${r.filename}</div>
-                    <div class="analysis-id">ID: ${r.analysis_id}</div>
-                </div>
-                
-                <div class="mini-stats">
-                    <div class="mini-stat total">
-                        <div class="mini-stat-number">${r.total_count}</div>
-                        <div class="mini-stat-label">Total Detected</div>
-                    </div>
-                    <div class="mini-stat grade-a">
-                        <div class="mini-stat-number">${gradeA}</div>
-                        <div class="mini-stat-label">Grade A</div>
-                    </div>
-                    <div class="mini-stat grade-b">
-                        <div class="mini-stat-number">${gradeB}</div>
-                        <div class="mini-stat-label">Grade B</div>
-                    </div>
-                    <div class="mini-stat grade-c">
-                        <div class="mini-stat-number">${gradeC}</div>
-                        <div class="mini-stat-label">Grade C</div>
-                    </div>
-                </div>
-                
-                <div class="oocyte-list">
-                    ${r.data.map(o => {
-                        const grade = o.who_grading.grade;
-                        let gradeClass = 'grade-c';
-                        if (grade.includes('A') || grade.includes('Tốt')) gradeClass = 'grade-a';
-                        else if (grade.includes('B') || grade.includes('Trung bình')) gradeClass = 'grade-b';
-                        
-                        return `
-                            <div class="oocyte-item ${gradeClass}">
-                                <div class="oocyte-info">
-                                    <div class="oocyte-id">🥚 Oocyte #${o.oocyte_id}</div>
-                                    <div class="oocyte-grade">${grade}</div>
-                                </div>
-                                <div class="oocyte-score">${o.who_grading.score}</div>
-                            </div>
-                        `;
-                    }).join('')}
-                </div>
-            </div>
+
+    <!-- Status -->
+    <div class="text-center mt-4" id="status"></div>
+  </div>
+
+  <!-- JS Logic -->
+  <script>
+    const uploadArea = document.getElementById("upload-area");
+    const fileInput = document.getElementById("file-input");
+    const selectFilesBtn = document.getElementById("select-files-btn");
+    const fileCount = document.getElementById("file-count");
+    const analyzeBtn = document.getElementById("analyze-btn");
+    const btnText = document.getElementById("btn-text");
+    const batchProgress = document.getElementById("batch-progress");
+    const results = document.getElementById("results");
+    const actionBtns = document.getElementById("action-btns");
+    const status = document.getElementById("status");
+    const resetBtn = document.getElementById("reset-btn");
+    const downloadBtn = document.getElementById("download-btn");
+
+    let selectedFiles = [];
+    let allResults = [];
+
+    // 🖱️ File selection
+    selectFilesBtn.onclick = () => fileInput.click();
+    fileInput.onchange = handleFiles;
+    uploadArea.addEventListener("dragover", e => {
+      e.preventDefault();
+      uploadArea.classList.add("dragover");
+    });
+    uploadArea.addEventListener("dragleave", () => uploadArea.classList.remove("dragover"));
+    uploadArea.addEventListener("drop", e => {
+      e.preventDefault();
+      uploadArea.classList.remove("dragover");
+      handleFiles({ target: { files: e.dataTransfer.files } });
+    });
+
+    function handleFiles(e) {
+      selectedFiles = Array.from(e.target.files);
+      if (selectedFiles.length > 0) {
+        fileCount.textContent = `${selectedFiles.length} file(s) selected.`;
+        analyzeBtn.disabled = false;
+      } else {
+        fileCount.textContent = "";
+        analyzeBtn.disabled = true;
+      }
+    }
+
+    // 🚀 Connect to Flask backend
+    analyzeBtn.onclick = analyzeImages;
+
+    async function analyzeImages() {
+      analyzeBtn.disabled = true;
+      btnText.innerHTML = '<span class="loading-spinner me-2"></span>Processing...';
+      batchProgress.innerHTML = '';
+      results.innerHTML = '';
+      allResults = [];
+
+      const formData = new FormData();
+      selectedFiles.forEach(file => formData.append("images", file));
+
+      selectedFiles.forEach((file, i) => {
+        const item = document.createElement("div");
+        item.className = "batch-progress-item processing";
+        item.id = `progress-${i}`;
+        item.innerHTML = `
+          <i class="bi bi-image"></i>
+          <span class="flex-grow-1">${file.name}</span>
+          <span class="badge bg-primary">Processing...</span>
         `;
-    }).join('')}
-    
-    <!-- Footer -->
-    <div class="footer">
-        <div class="footer-logo">🔬 BioAI Platform</div>
-        <div>&copy; 2025 BioAI Solutions. All Rights Reserved.</div>
-        <div>AI-Powered Oocyte Grading System</div>
-    </div>
-</body>
-</html>
-            `;
-            
-            // Open print dialog for PDF
-            const printWindow = window.open('', '_blank');
-            printWindow.document.write(reportHTML);
-            printWindow.document.close();
-            
-            // Wait for content to load then print
-            setTimeout(() => {
-                printWindow.print();
-            }, 500);
-            
-            console.log('📥 PDF report generated - Print dialog opened');
+        batchProgress.appendChild(item);
+      });
+
+      try {
+        const response = await fetch("http://127.0.0.1:8080/api/analyze", {
+          method: "POST",
+          body: formData
+        });
+        const data = await response.json();
+
+        if (data.status === "success") {
+          data.results.forEach((r, i) => {
+            const item = document.getElementById(`progress-${i}`);
+            if (r.error) {
+              item.className = "batch-progress-item error";
+              item.querySelector(".badge").className = "badge bg-danger";
+              item.querySelector(".badge").textContent = "Error";
+              return;
+            }
+
+            item.className = "batch-progress-item success";
+            item.querySelector(".badge").className = "badge bg-success";
+            item.querySelector(".badge").textContent = "✓ Done";
+
+            const predictions = r.result.results[0]?.predictions || [];
+            const dataParsed = predictions.map((p, idx) => ({
+              oocyte_id: idx + 1,
+              quality: p.class === "good" ? "good" : "bad",
+              score: Math.round(p.confidence * 100),
+              confidence: p.confidence
+            }));
+
+            allResults.push({
+              filename: r.filename,
+              analysis_id: `A${Date.now()}-${i}`,
+              total_count: dataParsed.length,
+              data: dataParsed
+            });
+          });
+
+          displayResults();
+          analyzeBtn.disabled = false;
+          btnText.textContent = `Analyze Images`;
+          actionBtns.style.display = "flex";
+          status.innerHTML = '<i class="bi bi-check-circle-fill text-success"></i> Analysis complete!';
+        } else {
+          alert("Error: " + JSON.stringify(data));
         }
-        
-        console.log('✅ All event listeners ready!');
-    </script>
+      } catch (err) {
+        console.error(err);
+        alert("❌ Failed to connect to backend!");
+      }
+    }
+
+    // 🧾 Display results
+    function displayResults() {
+  results.innerHTML = '';
+  allResults.forEach((r, index) => {
+    const card = document.createElement("div");
+    card.className = "card mb-3 shadow-sm";
+
+    const imageSection = r.image_url 
+      ? `<img src="${r.image_url}" class="img-fluid rounded mt-2 mb-3" alt="Analyzed Image">`
+      : `<div class="text-muted fst-italic">No visualization available</div>`;
+
+    card.innerHTML = `
+      <div class="card-body">
+        <h5 class="card-title">${r.filename}</h5>
+        <p class="text-muted">Analysis ID: ${r.analysis_id}</p>
+        <p><strong>Total Detections:</strong> ${r.total_count}</p>
+        ${imageSection}
+        <table class="table table-bordered table-sm mt-3">
+          <thead class="table-light">
+            <tr>
+              <th>#</th>
+              <th>Quality</th>
+              <th>Score</th>
+              <th>Confidence</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${r.data.map(d => `
+              <tr>
+                <td>${d.oocyte_id}</td>
+                <td>${d.quality}</td>
+                <td>${d.score}</td>
+                <td>${(d.confidence * 100).toFixed(2)}%</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      </div>
+    `;
+    results.appendChild(card);
+  });
+}
+
+
+    // 🔁 Reset button
+    resetBtn.onclick = () => {
+      selectedFiles = [];
+      allResults = [];
+      fileCount.textContent = '';
+      analyzeBtn.disabled = true;
+      batchProgress.innerHTML = '';
+      results.innerHTML = '';
+      actionBtns.style.display = 'none';
+      status.innerHTML = '';
+      btnText.textContent = 'Analyze Images';
+    };
+
+    // 💾 Download JSON
+    downloadBtn.onclick = () => {
+      const blob = new Blob([JSON.stringify(allResults, null, 2)], { type: "application/json" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "analysis_results.json";
+      link.click();
+    };
+  </script>
 </body>
 </html>

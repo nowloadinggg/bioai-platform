@@ -1,151 +1,134 @@
-from fastapi import FastAPI, File, UploadFile, Form, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-from yolo_detector import get_detector
-from grading import grader
-import uuid
-from datetime import datetime
-import time
+from flask import Flask, request, jsonify, send_from_directory
+from inference_sdk import InferenceHTTPClient
+from werkzeug.utils import secure_filename
+from flask_cors import CORS
+import os
+import cv2
 
-app = FastAPI(
-    title="BioAI Oocyte Grading API",
-    description="AI-powered oocyte detection and grading using YOLOv11",
-    version="1.0.0"
+# ----------------------------
+# Configuration
+# ----------------------------
+UPLOAD_FOLDER = "uploads"
+ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg"}
+
+WORKSPACE = "meo-d8oog"       # Your Roboflow workspace
+WORKFLOW_ID = "detect-count-and-visualize"  # Your Roboflow workflow ID
+API_KEY = "rf_sowvghtKgpcpTYwdyZnwol2E9Rg2"  # Your Roboflow API key
+
+# ----------------------------
+# Initialize Flask
+# ----------------------------
+app = Flask(__name__)
+CORS(app)
+app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+# ----------------------------
+# Initialize Roboflow client
+# ----------------------------
+client = InferenceHTTPClient(
+    api_url="https://serverless.roboflow.com",
+    api_key=API_KEY
 )
 
-# CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# ----------------------------
+# Helper Functions
+# ----------------------------
+def allowed_file(filename):
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
-@app.on_event("startup")
-async def startup_event():
-    """Load YOLO models on startup"""
-    print("🚀 Starting BioAI Backend...")
-    get_detector()  # Load models
-    print("✅ Backend ready!")
 
-@app.get("/")
-async def root():
-    return {
-        "message": "BioAI Oocyte Grading API",
-        "version": "1.0.0",
-        "status": "running",
-        "model": "YOLOv11"
-    }
+def draw_bounding_boxes(filepath, predictions):
+    """Draw bounding boxes on the image using predictions (if Roboflow doesn't return visualization)."""
+    image = cv2.imread(filepath)
+    if image is None:
+        return None
 
-@app.post("/api/v1/analysis/submit")
-async def analyze_oocyte(
-    file: UploadFile = File(...),
-    confidence: float = Form(0.25)
-):
-    """
-    Main endpoint: Analyze oocyte image
-    
-    Returns:
-        JSON với analysis_id, data (graded oocytes)
-    """
-    try:
-        print(f"📸 Analyzing image: {file.filename}")
+    for pred in predictions:
+        x, y, w, h = int(pred["x"]), int(pred["y"]), int(pred["width"]), int(pred["height"])
+        class_name = pred["class"]
+        conf = pred["confidence"]
+        color = (0, 255, 0) if class_name == "good" else (0, 0, 255)
+        cv2.rectangle(image, (x - w // 2, y - h // 2), (x + w // 2, y + h // 2), color, 2)
+        cv2.putText(image, f"{class_name} ({conf:.2f})", (x - w // 2, y - h // 2 - 5),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
-        # Generate analysis ID
-        analysis_id = str(uuid.uuid4())[:8]
+    annotated_filename = f"annotated_{os.path.basename(filepath)}"
+    annotated_path = os.path.join(UPLOAD_FOLDER, annotated_filename)
+    cv2.imwrite(annotated_path, image)
+    return annotated_filename
 
-        timings = {}
-        t0 = time.perf_counter()
 
-        # Read image
-        t_read_start = time.perf_counter()
-        image_bytes = await file.read()
-        t_read_end = time.perf_counter()
-        timings['read_seconds'] = round(t_read_end - t_read_start, 4)
+# ----------------------------
+# Routes
+# ----------------------------
+@app.route("/api/analyze", methods=["POST"])
+def analyze_images():
+    if "images" not in request.files:
+        return jsonify({"error": "No files uploaded"}), 400
 
-        # Get detector (should be loaded at startup)
-        t_detector_start = time.perf_counter()
-        detector = get_detector()
-        t_detector_end = time.perf_counter()
-        timings['get_detector_seconds'] = round(t_detector_end - t_detector_start, 4)
+    files = request.files.getlist("images")
+    results = []
 
-        # Step 1: Detect và segment oocytes
-        print("🔍 Running YOLO detection...")
-        t_infer_start = time.perf_counter()
-        oocytes = detector.detect_and_segment(image_bytes, conf=confidence)
-        t_infer_end = time.perf_counter()
-        timings['inference_seconds'] = round(t_infer_end - t_infer_start, 4)
+    for file in files:
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            filepath = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+            file.save(filepath)
 
-        if not oocytes:
-            print("⚠️ No oocytes detected")
-            total_time = round(time.perf_counter() - t0, 4)
-            timings['total_seconds'] = total_time
-            return JSONResponse(
-                status_code=200,
-                content={
-                    "analysis_id": analysis_id,
-                    "timestamp": datetime.now().isoformat(),
-                    "total_count": 0,
-                    "data": [],
-                    "message": "No oocytes detected. Try adjusting confidence threshold.",
-                    "timings": timings
-                }
-            )
+            try:
+                # Send image to Roboflow
+                result = client.run_workflow(
+                    workspace_name=WORKSPACE,
+                    workflow_id=WORKFLOW_ID,
+                    images={"image": filepath},
+                    use_cache=True
+                )
 
-        print(f"✅ Detected {len(oocytes)} oocytes")
+                # Extract visualized image if available
+                image_url = None
+                predictions = []
+                if isinstance(result, dict):
+                    rf_results = result.get("results", [])
+                    if rf_results:
+                        predictions = rf_results[0].get("predictions", [])
+                        if "visualization" in rf_results[0]:
+                            image_url = rf_results[0]["visualization"]
 
-        # Step 2: Grade oocytes
-        print("📊 Grading oocytes...")
-        t_grade_start = time.perf_counter()
-        graded_oocytes = grader.grade_batch(oocytes)
-        t_grade_end = time.perf_counter()
-        timings['grading_seconds'] = round(t_grade_end - t_grade_start, 4)
+                # If Roboflow didn't return visualization, generate it manually
+                if not image_url and predictions:
+                    annotated_filename = draw_bounding_boxes(filepath, predictions)
+                    if annotated_filename:
+                        image_url = f"http://127.0.0.1:8080/uploads/{annotated_filename}"
 
-        # Step 3: Create annotated image (optional)
-        # annotated_image = detector.create_annotated_image(image_bytes, oocytes)
+                results.append({
+                    "filename": filename,
+                    "image_url": image_url,
+                    "result": result
+                })
 
-        total_time = round(time.perf_counter() - t0, 4)
-        timings['total_seconds'] = total_time
+            except Exception as e:
+                results.append({
+                    "filename": filename,
+                    "error": str(e)
+                })
 
-        print(f"✅ Analysis complete: {analysis_id} (took {total_time}s)")
+    return jsonify({"status": "success", "results": results})
 
-        # Return response
-        return JSONResponse(
-            status_code=200,
-            content={
-                "analysis_id": analysis_id,
-                "timestamp": datetime.now().isoformat(),
-                "total_count": len(graded_oocytes),
-                "data": graded_oocytes,
-                "timings": timings
-                # "annotated_image": annotated_image  # Uncomment nếu muốn trả về ảnh
-            }
-        )
-    
-    except Exception as e:
-        print(f"❌ Error: {str(e)}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Analysis failed: {str(e)}"
-        )
 
-@app.get("/api/v1/health")
-async def health_check():
-    """Health check"""
-    try:
-        detector = get_detector()
-        return {
-            "status": "healthy",
-            "models_loaded": True,
-            "timestamp": datetime.now().isoformat()
-        }
-    except Exception as e:
-        return {
-            "status": "unhealthy",
-            "error": str(e)
-        }
+@app.route("/uploads/<path:filename>")
+def serve_upload(filename):
+    """Serve uploaded and annotated images."""
+    return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
 
+
+@app.route("/", methods=["GET"])
+def index():
+    return jsonify({"message": "BioAI Backend Running"})
+
+
+# ----------------------------
+# Run App
+# ----------------------------
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8080)
+    app.run(host="0.0.0.0", port=8080, debug=True)
