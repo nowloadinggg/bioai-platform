@@ -405,439 +405,228 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
     <script>
-        const fileInput = document.getElementById("file-input");
-        const uploadArea = document.getElementById("upload-area");
-        const selectFilesBtn = document.getElementById("select-files-btn");
-        const analyzeBtn = document.getElementById("analyze-btn");
-        const batchProgress = document.getElementById("batch-progress");
-        const status = document.getElementById("status");
-        const results = document.getElementById("results");
-        const fileCount = document.getElementById("file-count");
-        const resetBtn = document.getElementById("reset-btn");
-        const downloadBtn = document.getElementById("download-btn");
-        const btnText = document.getElementById("btn-text");
-        const actionBtns = document.getElementById("action-btns");
+    const fileInput = document.getElementById("file-input");
+    const uploadArea = document.getElementById("upload-area");
+    const selectFilesBtn = document.getElementById("select-files-btn");
+    const analyzeBtn = document.getElementById("analyze-btn");
+    const batchProgress = document.getElementById("batch-progress");
+    const status = document.getElementById("status");
+    const results = document.getElementById("results");
+    const fileCount = document.getElementById("file-count");
+    const resetBtn = document.getElementById("reset-btn");
+    const downloadBtn = document.getElementById("download-btn");
+    const btnText = document.getElementById("btn-text");
+    const actionBtns = document.getElementById("action-btns");
 
-        let selectedFiles = [];
-        let allResults = [];
+    let selectedFiles = [];
+    let allResults = [];
 
-        uploadArea.addEventListener("click", (e) => {
-            if (e.target.id !== "select-files-btn") {
-                fileInput.click();
-            }
-        });
+    // -------------------------------------------
+    // SELECT FILES BUTTON
+    // -------------------------------------------
+    selectFilesBtn.onclick = () => fileInput.click();
 
-        selectFilesBtn.onclick = () => fileInput.click();
+    // -------------------------------------------
+    // FILE INPUT → MERGE FILES
+    // -------------------------------------------
+    fileInput.onchange = () => {
+        const addedFiles = Array.from(fileInput.files);
+        selectedFiles = [...selectedFiles, ...addedFiles];
 
-        fileInput.onchange = () => {
-            selectedFiles = Array.from(fileInput.files);
-            if (selectedFiles.length > 0) {
-                fileCount.textContent = `${selectedFiles.length} file(s) selected`;
-                analyzeBtn.disabled = false;
-            }
-        };
+        fileCount.textContent = `${selectedFiles.length} file(s) selected`;
+        analyzeBtn.disabled = selectedFiles.length === 0;
+    };
 
-        uploadArea.ondragover = (e) => {
-            e.preventDefault();
-            uploadArea.classList.add("dragover");
-        };
+    // -------------------------------------------
+    // CLICK UPLOAD AREA TO OPEN FILE PICKER
+    // -------------------------------------------
+    uploadArea.addEventListener("click", (e) => {
+        if (e.target.id !== "select-files-btn") {
+            fileInput.click();
+        }
+    });
 
-        uploadArea.ondragleave = () => {
-            uploadArea.classList.remove("dragover");
-        };
+    // -------------------------------------------
+    // DRAG & DROP MULTIPLE FILES → MERGE
+    // -------------------------------------------
+    uploadArea.ondragover = (e) => {
+        e.preventDefault();
+        uploadArea.classList.add("dragover");
+    };
 
-        uploadArea.ondrop = (e) => {
-            e.preventDefault();
-            uploadArea.classList.remove("dragover");
-            fileInput.files = e.dataTransfer.files;
-            fileInput.onchange();
-        };
+    uploadArea.ondragleave = () => {
+        uploadArea.classList.remove("dragover");
+    };
 
-        analyzeBtn.onclick = async () => {
-            if (selectedFiles.length === 0) return;
+    uploadArea.ondrop = (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove("dragover");
 
-            allResults = [];
-            results.innerHTML = "";
-            status.innerHTML = "";
-            batchProgress.innerHTML = "";
-            actionBtns.style.display = "none";
+        const droppedFiles = Array.from(e.dataTransfer.files);
 
-            analyzeBtn.disabled = true;
-            btnText.innerHTML = '<span class="loading-spinner me-2"></span>Processing...';
+        // MERGE with old files
+        selectedFiles = [...selectedFiles, ...droppedFiles];
 
-            for (let i = 0; i < selectedFiles.length; i++) {
-                const file = selectedFiles[i];
-                const progressId = `progress-${i}`;
+        fileCount.textContent = `${selectedFiles.length} file(s) selected`;
+        analyzeBtn.disabled = selectedFiles.length === 0;
+    };
 
-                batchProgress.innerHTML += `
-                    <div class="batch-progress-item processing" id="${progressId}">
-                        <span class="loading-spinner me-3"></span>
-                        <span class="flex-grow-1">${file.name}</span>
-                        <i class="bi bi-hourglass-split"></i>
-                    </div>
-                `;
+    // -------------------------------------------
+    // START ANALYSIS
+    // -------------------------------------------
+    analyzeBtn.onclick = async () => {
+        if (selectedFiles.length === 0) return;
 
-                try {
-                    const formData = new FormData();
-                    formData.append("images", file);
+        allResults = [];
+        results.innerHTML = "";
+        status.innerHTML = "";
+        batchProgress.innerHTML = "";
+        actionBtns.style.display = "none";
 
-                    const response = await fetch("http://127.0.0.1:8080/api/analyze", {
-                        method: "POST",
-                        body: formData,
-                    });
+        analyzeBtn.disabled = true;
+        btnText.innerHTML = '<span class="loading-spinner me-2"></span>Processing...';
 
-                    const data = await response.json();
+        for (let i = 0; i < selectedFiles.length; i++) {
+            const file = selectedFiles[i];
+            const progressId = `progress-${i}`;
 
-                    if (data.status === "success" && data.results && data.results.length > 0) {
-                        const result = data.results[0];
-                        
-                        let totalCount = 0;
-                        if (result.result && result.result.results && result.result.results.length > 0) {
-                            const predictions = result.result.results[0].predictions || [];
-                            totalCount = predictions.length;
-                        }
+            batchProgress.innerHTML += `
+                <div class="batch-progress-item processing" id="${progressId}">
+                    <span class="loading-spinner me-3"></span>
+                    <span class="flex-grow-1">${file.name}</span>
+                    <i class="bi bi-hourglass-split"></i>
+                </div>
+            `;
 
-                        allResults.push({
-                            filename: file.name,
-                            image_file: file,
-                            image_url: result.image_url,
-                            total_count: totalCount,
-                            result: result.result
-                        });
+            try {
+                const formData = new FormData();
+                formData.append("images", file);
 
-                        document.getElementById(progressId).className = "batch-progress-item success";
-                        document.getElementById(progressId).innerHTML = `
-                            <i class="bi bi-check-circle-fill me-3"></i>
-                            <span class="flex-grow-1">${file.name}</span>
-                            <span class="badge bg-success">${totalCount} detected</span>
-                        `;
-                    } else {
-                        throw new Error(data.message || "Analysis failed");
-                    }
-                } catch (error) {
-                    document.getElementById(progressId).className = "batch-progress-item error";
-                    document.getElementById(progressId).innerHTML = `
-                        <i class="bi bi-x-circle-fill me-3"></i>
-                        <span class="flex-grow-1">${file.name}</span>
-                        <span class="badge bg-danger">Error</span>
-                    `;
-                }
-            }
-
-            btnText.innerHTML = '<i class="bi bi-play-circle-fill me-2"></i>Analyze Images';
-            analyzeBtn.disabled = false;
-
-            if (allResults.length > 0) {
-                displayResults();
-                actionBtns.style.display = "flex";
-            }
-        };
-
-        function displayResults() {
-            results.innerHTML = "";
-
-            allResults.forEach((result, index) => {
-                const predictions = result.result?.results?.[0]?.predictions || [];
-                
-                let detectionRows = "";
-                predictions.forEach((pred, i) => {
-                    const qualityBadge = pred.class === "good" 
-                        ? '<span class="badge bg-success">Good</span>' 
-                        : '<span class="badge bg-danger">Bad</span>';
-                    
-                    detectionRows += `
-                        <tr>
-                            <td>${i + 1}</td>
-                            <td>${pred.class}</td>
-                            <td>${qualityBadge}</td>
-                            <td>${(pred.confidence * 100).toFixed(2)}%</td>
-                        </tr>
-                    `;
+                const response = await fetch("http://127.0.0.1:8080/api/analyze", {
+                    method: "POST",
+                    body: formData,
                 });
 
-                results.innerHTML += `
-                    <div class="card mb-4">
-                        <div class="card-header">
-                            <h5 class="mb-0">
-                                <i class="bi bi-image me-2"></i>${result.filename}
-                                <span class="badge bg-light text-dark ms-2">With Bounding Boxes</span>
-                            </h5>
+                const data = await response.json();
+                const item = data.results[0];
+
+                let predictions = item.result.results[0].predictions;
+                let totalCount = predictions.length;
+
+                allResults.push({
+                    filename: file.name,
+                    image_file: file,
+                    image_url: item.image_url,
+                    total_count: totalCount,
+                    result: item.result
+                });
+
+                // SUCCESS UI UPDATE
+                const progressEl = document.getElementById(progressId);
+                progressEl.classList.remove("processing");
+                progressEl.classList.add("success");
+                progressEl.innerHTML = `
+                    <i class="bi bi-check-circle-fill me-3"></i>
+                    <span class="flex-grow-1">${file.name}</span>
+                    <span class="badge bg-success">${totalCount} detected</span>
+                `;
+
+            } catch (error) {
+                const progressEl = document.getElementById(progressId);
+                progressEl.classList.remove("processing");
+                progressEl.classList.add("error");
+                progressEl.innerHTML = `
+                    <i class="bi bi-x-circle-fill me-3"></i>
+                    <span class="flex-grow-1">${file.name}</span>
+                    <span class="badge bg-danger">Error</span>
+                `;
+            }
+        }
+
+        btnText.innerHTML = '<i class="bi bi-play-circle-fill me-2"></i>Analyze Images';
+        analyzeBtn.disabled = false;
+
+        if (allResults.length > 0) {
+            displayResults();
+            actionBtns.style.display = "flex";
+        }
+    };
+
+    // -------------------------------------------
+    // DISPLAY RESULTS
+    // -------------------------------------------
+    function displayResults() {
+        results.innerHTML = "";
+
+        allResults.forEach((result) => {
+            const predictions = result.result.results[0].predictions;
+
+            let rows = "";
+            predictions.forEach((p, i) => {
+                rows += `
+                    <tr>
+                        <td>${i + 1}</td>
+                        <td>${p.class}</td>
+                        <td>${p.class === "good" ? 
+                                '<span class="badge bg-success">Good</span>' : 
+                                '<span class="badge bg-danger">Bad</span>'}</td>
+                        <td>${(p.confidence * 100).toFixed(2)}%</td>
+                    </tr>`;
+            });
+
+            results.innerHTML += `
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5>
+                            <i class="bi bi-image"></i> ${result.filename}
+                            <span class="badge bg-light text-dark ms-2">With Boxes</span>
+                        </h5>
+                    </div>
+                    <div class="card-body row">
+                        <div class="col-md-6">
+                            <img src="${result.image_url}" class="img-fluid rounded" />
                         </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <img src="${result.image_url}" class="img-fluid rounded" alt="${result.filename}" style="max-height: 400px; object-fit: contain; display: block; margin: 0 auto;">
-                                </div>
-                                <div class="col-md-6">
-                                    <h6 class="fw-bold">Detection Summary</h6>
-                                    <p class="mb-3"><strong>Total Oocytes Detected:</strong> ${result.total_count}</p>
-                                    
-                                    ${predictions.length > 0 ? `
-                                        <div class="table-responsive">
-                                            <table class="table table-sm table-hover">
-                                                <thead class="table-light">
-                                                    <tr>
-                                                        <th>#</th>
-                                                        <th>Class</th>
-                                                        <th>Quality</th>
-                                                        <th>Confidence</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    ${detectionRows}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    ` : '<p class="text-muted">No oocytes detected in this image.</p>'}
-                                </div>
-                            </div>
+                        <div class="col-md-6">
+                            <h6 class="fw-bold">Detection Summary</h6>
+                            <p><strong>Total:</strong> ${result.total_count}</p>
+                            <table class="table table-sm table-hover">
+                                <thead class="table-light">
+                                    <tr><th>#</th><th>Class</th><th>Quality</th><th>Conf.</th></tr>
+                                </thead>
+                                <tbody>${rows}</tbody>
+                            </table>
                         </div>
                     </div>
-                `;
-            });
-        }
+                </div>
+            `;
+        });
+    }
 
-        resetBtn.onclick = () => {
-            selectedFiles = [];
-            allResults = [];
-            fileInput.value = "";
-            fileCount.textContent = "";
-            results.innerHTML = "";
-            status.innerHTML = "";
-            batchProgress.innerHTML = "";
-            actionBtns.style.display = "none";
-            analyzeBtn.disabled = true;
-            btnText.innerHTML = '<i class="bi bi-play-circle-fill me-2"></i>Analyze Images';
-        };
+    // -------------------------------------------
+    // RESET
+    // -------------------------------------------
+    resetBtn.onclick = () => {
+        selectedFiles = [];
+        allResults = [];
+        fileInput.value = "";
+        fileCount.textContent = "";
+        results.innerHTML = "";
+        status.innerHTML = "";
+        batchProgress.innerHTML = "";
+        actionBtns.style.display = "none";
+        analyzeBtn.disabled = true;
+        btnText.innerHTML = '<i class="bi-play-circle-fill me-2"></i>Analyze Images';
+    };
 
-        downloadBtn.onclick = () => {
-            const blob = new Blob([JSON.stringify(allResults, null, 2)], { type: "application/json" });
-            const link = document.createElement("a");
-            link.href = URL.createObjectURL(blob);
-            link.download = "analysis_results.json";
-            link.click();
-        };
-
-        const downloadPdfBtn = document.getElementById("download-pdf-btn");
-        downloadPdfBtn.onclick = async () => {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF('p', 'mm', 'a4');
-            
-            const pageWidth = doc.internal.pageSize.getWidth();
-            const pageHeight = doc.internal.pageSize.getHeight();
-            const margin = 15;
-            const contentWidth = pageWidth - 2 * margin;
-            let yPosition = margin;
-
-            const checkNewPage = (requiredSpace) => {
-                if (yPosition + requiredSpace > pageHeight - margin) {
-                    doc.addPage();
-                    yPosition = margin;
-                    return true;
-                }
-                return false;
-            };
-
-            doc.setFillColor(226, 252, 214);
-            doc.rect(0, 0, pageWidth, 55, 'F');
-            
-            for (let i = 0; i < 55; i++) {
-                const alpha = i / 55;
-                const r = Math.round(226 + (20 - 226) * alpha);
-                const g = Math.round(252 + (150 - 252) * alpha);
-                const b = Math.round(214 + (127 - 214) * alpha);
-                doc.setFillColor(r, g, b);
-                doc.rect(0, i, pageWidth, 1, 'F');
-            }
-            
-            doc.setFillColor(9, 93, 126);
-            doc.rect(0, 0, pageWidth, 3, 'F');
-            
-            doc.setFillColor(204, 236, 238);
-            doc.circle(10, 10, 8, 'F');
-            doc.circle(pageWidth - 10, 10, 8, 'F');
-            
-            doc.setTextColor(255, 255, 255);
-            doc.setFontSize(28);
-            doc.setFont(undefined, 'bold');
-            doc.text('BioAI Platform', pageWidth / 2, 20, { align: 'center' });
-            
-            doc.setFontSize(20);
-            doc.text('🔬', pageWidth / 2 - 40, 19);
-            doc.text('🧬', pageWidth / 2 + 40, 19);
-            
-            doc.setTextColor(255, 255, 255);
-            doc.setFontSize(16);
-            doc.setFont(undefined, 'bold');
-            doc.text('Analysis Report', pageWidth / 2, 32, { align: 'center' });
-            
-            doc.setFontSize(10);
-            doc.setFont(undefined, 'normal');
-            doc.setTextColor(240, 248, 255);
-            doc.text('Oocyte Quality Assessment & Detection Results', pageWidth / 2, 41, { align: 'center' });
-            
-            doc.setFillColor(255, 255, 255);
-            for (let i = 0; i < pageWidth; i += 10) {
-                doc.circle(i, 52, 1, 'F');
-            }
-            
-            yPosition = 62;
-
-            const patientName = document.getElementById('patient-name').value || 'Not specified';
-            const patientDob = document.getElementById('patient-dob').value || 'Not specified';
-            
-            if (patientName !== 'Not specified' || patientDob !== 'Not specified') {
-                doc.setFillColor(226, 252, 214);
-                doc.roundedRect(margin, yPosition, contentWidth, 20, 2, 2, 'F');
-                
-                doc.setTextColor(9, 93, 126);
-                doc.setFontSize(10);
-                doc.setFont(undefined, 'bold');
-                doc.text('Patient Information', margin + 5, yPosition + 7);
-                
-                doc.setTextColor(0, 0, 0);
-                doc.setFont(undefined, 'normal');
-                doc.setFontSize(9);
-                doc.text(`Name: ${patientName}`, margin + 5, yPosition + 13);
-                doc.text(`Date of Birth: ${patientDob}`, margin + 5, yPosition + 18);
-                
-                yPosition += 25;
-            }
-
-            doc.setTextColor(9, 93, 126);
-            doc.setFontSize(10);
-            doc.setFont(undefined, 'bold');
-            doc.text('Report Details', margin, yPosition);
-            yPosition += 7;
-
-            doc.setTextColor(0, 0, 0);
-            doc.setFont(undefined, 'normal');
-            doc.setFontSize(9);
-            doc.text(`Generated: ${new Date().toLocaleString()}`, margin, yPosition);
-            yPosition += 5;
-            doc.text(`Total Images Analyzed: ${allResults.length}`, margin, yPosition);
-            yPosition += 5;
-            
-            const totalDetections = allResults.reduce((sum, r) => sum + r.total_count, 0);
-            doc.text(`Total Oocytes Detected: ${totalDetections}`, margin, yPosition);
-            yPosition += 12;
-
-            for (let index = 0; index < allResults.length; index++) {
-                const result = allResults[index];
-                checkNewPage(60);
-
-                doc.setFillColor(20, 150, 127);
-                doc.roundedRect(margin, yPosition - 5, contentWidth, 10, 2, 2, 'F');
-                
-                doc.setTextColor(255, 255, 255);
-                doc.setFontSize(11);
-                doc.setFont(undefined, 'bold');
-                doc.text(`Image ${index + 1}: ${result.filename}`, margin + 3, yPosition + 2);
-                
-                yPosition += 12;
-                doc.setTextColor(0, 0, 0);
-
-                try {
-                    let imgData;
-                    if (result.image_url.startsWith('http')) {
-                        const response = await fetch(result.image_url);
-                        const blob = await response.blob();
-                        imgData = await loadImageAsBase64FromBlob(blob);
-                    } else {
-                        imgData = await loadImageAsBase64(result.image_file);
-                    }
-                    
-                    const imgWidth = contentWidth * 0.6;
-                    const imgHeight = 80;
-                    checkNewPage(imgHeight + 10);
-                    
-                    doc.addImage(imgData, 'JPEG', margin, yPosition, imgWidth, imgHeight);
-                    yPosition += imgHeight + 5;
-                } catch (error) {
-                    doc.setTextColor(255, 0, 0);
-                    doc.setFontSize(9);
-                    doc.text('Image could not be loaded', margin, yPosition);
-                    yPosition += 10;
-                    doc.setTextColor(0, 0, 0);
-                }
-
-                doc.setFontSize(10);
-                doc.setFont(undefined, 'bold');
-                doc.text(`Total Detected: ${result.total_count}`, margin, yPosition);
-                yPosition += 7;
-
-                if (result.result?.results?.[0]?.predictions?.length > 0) {
-                    const predictions = result.result.results[0].predictions;
-                    
-                    checkNewPage(10 + predictions.length * 7);
-                    
-                    doc.setFillColor(226, 252, 214);
-                    doc.rect(margin, yPosition, contentWidth, 8, 'F');
-                    
-                    doc.setFontSize(9);
-                    doc.setFont(undefined, 'bold');
-                    doc.text('#', margin + 2, yPosition + 5);
-                    doc.text('Class', margin + 15, yPosition + 5);
-                    doc.text('Quality', margin + 60, yPosition + 5);
-                    doc.text('Confidence', margin + 100, yPosition + 5);
-                    yPosition += 8;
-
-                    doc.setFont(undefined, 'normal');
-                    predictions.forEach((pred, i) => {
-                        if (i % 2 === 0) {
-                            doc.setFillColor(248, 250, 252);
-                            doc.rect(margin, yPosition, contentWidth, 7, 'F');
-                        }
-                        
-                        doc.text(`${i + 1}`, margin + 2, yPosition + 5);
-                        doc.text(pred.class, margin + 15, yPosition + 5);
-                        
-                        if (pred.class === "good") {
-                            doc.setTextColor(25, 135, 84);
-                            doc.text('Good', margin + 60, yPosition + 5);
-                        } else {
-                            doc.setTextColor(220, 53, 69);
-                            doc.text('Bad', margin + 60, yPosition + 5);
-                        }
-                        doc.setTextColor(0, 0, 0);
-                        
-                        doc.text(`${(pred.confidence * 100).toFixed(2)}%`, margin + 100, yPosition + 5);
-                        yPosition += 7;
-                    });
-                }
-
-                yPosition += 10;
-            }
-
-            const totalPages = doc.internal.pages.length - 1;
-            for (let i = 1; i <= totalPages; i++) {
-                doc.setPage(i);
-                doc.setFontSize(8);
-                doc.setTextColor(128, 128, 128);
-                doc.text(`Page ${i} of ${totalPages}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
-                doc.text('Generated by BioAI Platform', pageWidth / 2, pageHeight - 6, { align: 'center' });
-            }
-
-            doc.save("BioAI_Analysis_Report.pdf");
-        };
-
-        function loadImageAsBase64(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = (e) => resolve(e.target.result);
-                reader.onerror = reject;
-                reader.readAsDataURL(file);
-            });
-        }
-
-        function loadImageAsBase64FromBlob(blob) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = (e) => resolve(e.target.result);
-                reader.onerror = reject;
-                reader.readAsDataURL(blob);
-            });
-        }
+    // DOWNLOAD JSON
+    downloadBtn.onclick = () => {
+        const blob = new Blob([JSON.stringify(allResults, null, 2)], { type: "application/json" });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "analysis_results.json";
+        link.click();
+    };
     </script>
+
 </body>
 </html>

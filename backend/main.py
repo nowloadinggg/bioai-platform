@@ -2,19 +2,22 @@ from flask import Flask, request, jsonify, send_from_directory
 from inference_sdk import InferenceHTTPClient
 from werkzeug.utils import secure_filename
 from flask_cors import CORS
+from dotenv import load_dotenv
 import os
 import cv2
 
 # ----------------------------
-# Configuration
+# Load config.env
 # ----------------------------
-UPLOAD_FOLDER = "uploads"
-ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg"}
+load_dotenv("config.env")
 
-WORKSPACE = "meo-d8oog"       # Your Roboflow workspace
-WORKFLOW_ID = "detect-count-and-visualize"  # Your Roboflow workflow ID
-MODEL_ID = "meo-d8oog/1"  # Your Roboflow model ID (workspace/version)
-API_KEY = "rf_sowvghtKgpcpTYwdyZnwol2E9Rg2"  # Your Roboflow API key
+UPLOAD_FOLDER = os.getenv("UPLOAD_FOLDER", "uploads")
+ALLOWED_EXTENSIONS = set(os.getenv("ALLOWED_EXTENSIONS", "png,jpg,jpeg").split(","))
+
+WORKSPACE = os.getenv("WORKSPACE")
+MODEL_ID = os.getenv("MODEL_ID")
+WORKFLOW_ID = os.getenv("WORKFLOW_ID")
+API_KEY = os.getenv("API_KEY")
 
 # ----------------------------
 # Initialize Flask
@@ -40,46 +43,36 @@ def allowed_file(filename):
 
 
 def draw_bounding_boxes(filepath, predictions):
-    """Draw bounding boxes on the image using predictions."""
     image = cv2.imread(filepath)
     if image is None:
         return None
 
     for pred in predictions:
-        x, y, w, h = int(pred["x"]), int(pred["y"]), int(pred["width"]), int(pred["height"])
+        x, y = int(pred["x"]), int(pred["y"])
+        w, h = int(pred["width"]), int(pred["height"])
         class_name = pred["class"]
         conf = pred["confidence"]
-        
+
         # Color: Green for good, Red for bad
         color = (0, 255, 0) if class_name == "good" else (0, 0, 255)
-        
-        # Calculate box corners
+
         x1, y1 = x - w // 2, y - h // 2
         x2, y2 = x + w // 2, y + h // 2
-        
-        # Draw rectangle with thicker lines
+
         cv2.rectangle(image, (x1, y1), (x2, y2), color, 3)
-        
-        # Create label with background
+
         label = f"{class_name} {conf:.2f}"
-        font = cv2.FONT_HERSHEY_SIMPLEX
-        font_scale = 0.7
-        thickness = 2
-        
-        # Get text size for background
-        (text_width, text_height), baseline = cv2.getTextSize(label, font, font_scale, thickness)
-        
-        # Draw filled rectangle as background for text
-        cv2.rectangle(image, (x1, y1 - text_height - 10), (x1 + text_width, y1), color, -1)
-        
-        # Put text on top of background
-        cv2.putText(image, label, (x1, y1 - 5), font, font_scale, (255, 255, 255), thickness)
+
+        (tw, th), baseline = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.7, 2)
+
+        cv2.rectangle(image, (x1, y1 - th - 10), (x1 + tw, y1), color, -1)
+        cv2.putText(image, label, (x1, y1 - 5),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
 
     annotated_filename = f"annotated_{os.path.basename(filepath)}"
     annotated_path = os.path.join(UPLOAD_FOLDER, annotated_filename)
     cv2.imwrite(annotated_path, image)
     return annotated_filename
-
 
 # ----------------------------
 # Routes
@@ -99,20 +92,15 @@ def analyze_images():
             file.save(filepath)
 
             try:
-                # Send image to Roboflow using infer method
                 result = client.infer(filepath, model_id=MODEL_ID)
-
-                # Extract predictions
-                image_url = None
                 predictions = result.get("predictions", []) if isinstance(result, dict) else []
 
-                # Generate visualization manually
+                image_url = None
                 if predictions:
                     annotated_filename = draw_bounding_boxes(filepath, predictions)
                     if annotated_filename:
                         image_url = f"http://127.0.0.1:8080/uploads/{annotated_filename}"
 
-                # Format result to match frontend expectations
                 formatted_result = {
                     "results": [{
                         "predictions": predictions,
@@ -127,17 +115,13 @@ def analyze_images():
                 })
 
             except Exception as e:
-                results.append({
-                    "filename": filename,
-                    "error": str(e)
-                })
+                results.append({"filename": filename, "error": str(e)})
 
     return jsonify({"status": "success", "results": results})
 
 
 @app.route("/uploads/<path:filename>")
 def serve_upload(filename):
-    """Serve uploaded and annotated images."""
     return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
 
 
@@ -145,9 +129,8 @@ def serve_upload(filename):
 def index():
     return jsonify({"message": "BioAI Backend Running"})
 
-
 # ----------------------------
 # Run App
 # ----------------------------
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8080, debug=True)
+    app.run(host="0.0.0.0", port=8081, debug=True)
